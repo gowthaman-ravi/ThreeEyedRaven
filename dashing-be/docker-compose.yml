@@ -1,0 +1,37 @@
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: dashing-postgres
+    environment:
+      POSTGRES_USER: dashing
+      POSTGRES_PASSWORD: dashing_dev
+      POSTGRES_DB: dashing
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dashing -d dashing"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis (for future queue/caching)
+  redis:
+    image: redis:7-alpine
+    container_name: dashing-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
+  redis_data:
+

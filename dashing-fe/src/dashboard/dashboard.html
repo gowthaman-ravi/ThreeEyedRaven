@@ -1,0 +1,1563 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' ws://localhost:* http://localhost:* https://localhost:* http://127.0.0.1:* https://127.0.0.1:*">
+  <title>Dashing - QA Testing Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div id="app">
+    <!-- Left Sidebar Navigation -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="logo">
+          <svg class="logo-icon" viewBox="0 0 32 32" fill="none">
+            <rect x="2" y="2" width="28" height="28" rx="6" stroke="currentColor" stroke-width="2"/>
+            <circle cx="16" cy="16" r="6" fill="currentColor"/>
+            <path d="M16 4V12M16 20V28M4 16H12M20 16H28" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+          <span class="logo-text">Dashing</span>
+        </div>
+      </div>
+      
+      <nav class="sidebar-nav">
+        <button class="nav-item active" data-page="sessions">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M12 2v3M12 19v3M2 12h3M19 12h3"/>
+          </svg>
+          <span>Sessions</span>
+          <span class="nav-badge" id="active-sessions-badge">0</span>
+        </button>
+        
+        <button class="nav-item" data-page="history">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <polyline points="12,6 12,12 16,14"/>
+          </svg>
+          <span>History</span>
+        </button>
+        
+        <button class="nav-item" data-page="generated">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+            <polyline points="14,2 14,8 20,8"/>
+            <line x1="16" y1="13" x2="8" y2="13"/>
+            <line x1="16" y1="17" x2="8" y2="17"/>
+            <polyline points="10,9 9,9 8,9"/>
+          </svg>
+          <span>Generated</span>
+          <span class="nav-badge nav-badge-pro" title="Pro Feature">PRO</span>
+        </button>
+        
+        <button class="nav-item" data-page="settings">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/>
+          </svg>
+          <span>Settings</span>
+        </button>
+      </nav>
+      
+      <div class="sidebar-footer">
+        <div class="version-info">v1.0.0</div>
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <div class="main-wrapper">
+      <!-- Header -->
+      <header class="dashboard-header">
+        <h1 class="page-title" id="page-title">Active Sessions</h1>
+        <div class="header-actions">
+          <button id="create-session-btn" class="btn btn-primary">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            New Session
+          </button>
+        </div>
+      </header>
+
+      <!-- Main Content -->
+      <main class="dashboard-main">
+        <!-- Sessions Page -->
+        <div class="page active" id="page-sessions">
+          <section class="section active-sessions">
+            <div id="active-sessions-list" class="sessions-grid">
+              <!-- Active sessions will be rendered here -->
+            </div>
+            <div class="empty-state-container" id="no-active-sessions">
+              <div class="empty-state">
+                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <rect x="3" y="3" width="18" height="18" rx="2"/>
+                  <path d="M12 8v8M8 12h8"/>
+                </svg>
+                <p>No active sessions</p>
+                <span>Create a new session to start recording</span>
+                <button class="btn btn-primary" id="empty-create-btn" style="margin-top: 16px;">
+                  <!-- <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                  </svg> -->
+                  Create New Session
+                </button>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <!-- History Page -->
+        <div class="page" id="page-history">
+          <section class="section session-history">
+            <div class="section-header">
+              <h2>Session History</h2>
+              <div class="section-actions">
+                <button class="btn btn-sm btn-secondary" id="sync-all-btn" title="Sync all unsynced sessions to cloud">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0118.8-4.3M22 12.5a10 10 0 01-18.8 4.2"/>
+                  </svg>
+                  Sync All
+                </button>
+              </div>
+            </div>
+            <div id="session-history-list" class="sessions-list">
+              <!-- Past sessions will be rendered here -->
+            </div>
+            <div class="empty-state-container" id="no-history">
+              <div class="empty-state">
+                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <circle cx="12" cy="12" r="10"/>
+                  <polyline points="12,6 12,12 16,14"/>
+                </svg>
+                <p>No session history</p>
+                <span>Completed sessions will appear here</span>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <!-- Settings Page -->
+        <div class="page" id="page-settings">
+          <section class="section settings">
+            <!-- Settings Navigation (list of cards) -->
+            <div class="settings-nav" id="settings-nav">
+              <!-- License & Sync Card -->
+              <div class="settings-nav-card" data-settings-section="license-sync">
+                <div class="settings-nav-icon license-sync-icon">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                    <path d="M7 11V7a5 5 0 0110 0v4"/>
+                  </svg>
+                </div>
+                <div class="settings-nav-content">
+                  <h3>License & Sync</h3>
+                  <p>Manage your license and cloud synchronization</p>
+                </div>
+                <div class="settings-nav-badge" id="nav-license-badge">
+                  <span class="tier-name">FREE</span>
+                </div>
+                <svg class="settings-nav-arrow" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="9 18 15 12 9 6"/>
+                </svg>
+              </div>
+              
+              <!-- Session Limits Card -->
+              <div class="settings-nav-card" data-settings-section="session-limits">
+                <div class="settings-nav-icon session-limits-icon">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="3" width="7" height="7"/>
+                    <rect x="14" y="3" width="7" height="7"/>
+                    <rect x="14" y="14" width="7" height="7"/>
+                    <rect x="3" y="14" width="7" height="7"/>
+                  </svg>
+                </div>
+                <div class="settings-nav-content">
+                  <h3>Session Limits</h3>
+                  <p>Configure session and window limits</p>
+                </div>
+                <svg class="settings-nav-arrow" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="9 18 15 12 9 6"/>
+                </svg>
+              </div>
+              
+              <!-- Data Management Card -->
+              <div class="settings-nav-card" data-settings-section="data-management">
+                <div class="settings-nav-icon data-management-icon">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <ellipse cx="12" cy="5" rx="9" ry="3"/>
+                    <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/>
+                    <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>
+                  </svg>
+                </div>
+                <div class="settings-nav-content">
+                  <h3>Data Management</h3>
+                  <p>Manage your session data and storage</p>
+                </div>
+                <svg class="settings-nav-arrow" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="9 18 15 12 9 6"/>
+                </svg>
+              </div>
+              
+              <!-- Session Rules Card -->
+              <div class="settings-nav-card" data-settings-section="session-rules">
+                <div class="settings-nav-icon session-rules-icon">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+                    <path d="M2 17l10 5 10-5"/>
+                    <path d="M2 12l10 5 10-5"/>
+                  </svg>
+                </div>
+                <div class="settings-nav-content">
+                  <h3>Session Rules</h3>
+                  <p>Configure automatic behaviors for sessions</p>
+                </div>
+                <svg class="settings-nav-arrow" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="9 18 15 12 9 6"/>
+                </svg>
+              </div>
+              
+              <!-- Integrations Card -->
+              <div class="settings-nav-card" data-settings-section="integrations">
+                <div class="settings-nav-icon integrations-icon">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 2a2 2 0 012 2c0 .74-.4 1.39-1 1.73v1.54a3 3 0 012.54 2.54h1.54c.34-.6.99-1 1.73-1a2 2 0 110 4c-.74 0-1.39-.4-1.73-1h-1.54a3 3 0 01-2.54 2.54v1.54c.6.34 1 .99 1 1.73a2 2 0 11-4 0c0-.74.4-1.39 1-1.73v-1.54a3 3 0 01-2.54-2.54H5.73c-.34.6-.99 1-1.73 1a2 2 0 110-4c.74 0 1.39.4 1.73 1h1.54A3 3 0 019.81 7.27V5.73c-.6-.34-1-.99-1-1.73a2 2 0 114 0z"/>
+                  </svg>
+                </div>
+                <div class="settings-nav-content">
+                  <h3>Integrations</h3>
+                  <p>Connect AI providers and external services</p>
+                </div>
+                <svg class="settings-nav-arrow" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="9 18 15 12 9 6"/>
+                </svg>
+              </div>
+            </div>
+            
+            <!-- Settings Sub-Views Container -->
+            <div class="settings-subview hidden" id="settings-subview">
+              <!-- Back Button Header -->
+              <div class="settings-subview-header">
+                <button class="settings-back-btn" id="settings-back-btn">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="15 18 9 12 15 6"/>
+                  </svg>
+                  <span>Settings</span>
+                </button>
+                <h2 class="settings-subview-title" id="settings-subview-title">License & Sync</h2>
+              </div>
+              
+              <!-- License & Sync Sub-View -->
+              <div class="settings-section-content" id="section-license-sync">
+                <!-- License Section -->
+                <div class="settings-card license-card">
+                  <h3 class="settings-section-title">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                      <path d="M7 11V7a5 5 0 0110 0v4"/>
+                    </svg>
+                    License
+                  </h3>
+                  
+                  <!-- License Status Display -->
+                  <div class="license-status" id="license-status">
+                    <div class="license-tier-badge free" id="license-tier-badge">
+                      <span class="tier-name">FREE</span>
+                    </div>
+                    <div class="license-details" id="license-details">
+                      <p class="license-info">Using free tier with basic features</p>
+                    </div>
+                  </div>
+                  
+                  <!-- License Key Input (shown when not licensed) -->
+                  <div class="license-input-section" id="license-input-section">
+                    <div class="setting-item">
+                      <div class="setting-info">
+                        <label for="license-key">License Key</label>
+                        <span class="setting-description">Enter your license key to unlock Pro or Enterprise features</span>
+                      </div>
+                      <div class="license-input-group">
+                        <input type="text" id="license-key" placeholder="XXXX-XXXX-XXXX-XXXX" class="setting-input license-key-input">
+                        <button class="btn btn-primary btn-sm" id="activate-license-btn">Activate</button>
+                      </div>
+                      <div class="license-error hidden" id="license-error"></div>
+                    </div>
+                  </div>
+                  
+                  <!-- Licensed User Info (shown when licensed) -->
+                  <div class="license-active-section hidden" id="license-active-section">
+                    <div class="license-user-info">
+                      <div class="info-row">
+                        <span class="info-label">Email</span>
+                        <span class="info-value" id="license-email">-</span>
+                      </div>
+                      <div class="info-row">
+                        <span class="info-label">Organization</span>
+                        <span class="info-value" id="license-org">-</span>
+                      </div>
+                      <div class="info-row">
+                        <span class="info-label">Expires</span>
+                        <span class="info-value" id="license-expires">-</span>
+                      </div>
+                    </div>
+                    <button class="btn btn-secondary btn-sm" id="deactivate-license-btn">Deactivate License</button>
+                  </div>
+                  
+                  <!-- Upgrade CTA (shown on free tier) -->
+                  <div class="upgrade-cta" id="upgrade-cta">
+                    <h4>Upgrade to Pro</h4>
+                    <ul class="upgrade-features">
+                      <li>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <polyline points="20 6 9 17 4 12"/>
+                        </svg>
+                        Cloud sync to your backend
+                      </li>
+                      <li>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <polyline points="20 6 9 17 4 12"/>
+                        </svg>
+                        Playwright & Cypress export
+                      </li>
+                      <li>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <polyline points="20 6 9 17 4 12"/>
+                        </svg>
+                        Local API server for integrations
+                      </li>
+                      <li>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <polyline points="20 6 9 17 4 12"/>
+                        </svg>
+                        Extended history (90 days)
+                      </li>
+                    </ul>
+                    <a href="https://dashing.dev/pricing" target="_blank" class="btn btn-accent">Learn More</a>
+                  </div>
+                </div>
+                
+                <!-- Cloud Sync Section -->
+                <div class="settings-card sync-card" id="sync-section">
+                  <h3 class="settings-section-title">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+                      <polyline points="17 8 12 3 7 8"/>
+                      <line x1="12" y1="3" x2="12" y2="15"/>
+                    </svg>
+                    Cloud Sync
+                    <span class="pro-badge" id="sync-pro-badge">PRO</span>
+                  </h3>
+                  
+                  <!-- Sync Locked Message (for free tier) -->
+                  <div class="sync-locked" id="sync-locked">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                      <path d="M7 11V7a5 5 0 0110 0v4"/>
+                    </svg>
+                    <p>Cloud Sync is available on Pro and Enterprise plans</p>
+                    <span>Sync your sessions to your team's backend for AI insights and collaboration</span>
+                  </div>
+                  
+                  <!-- Sync Configuration (for Pro+ users) -->
+                  <div class="sync-config hidden" id="sync-config">
+                    <div class="sync-status-display" id="sync-status-display">
+                      <div class="sync-status-indicator stopped" id="sync-indicator">
+                        <span class="status-dot"></span>
+                        <span class="status-text">Auto-sync stopped</span>
+                      </div>
+                    </div>
+                    
+                    <div class="settings-group">
+                      <div class="setting-item">
+                        <div class="setting-info">
+                          <label for="sync-api-url">Backend API URL</label>
+                          <span class="setting-description">Your organization's sync endpoint</span>
+                        </div>
+                        <input type="text" id="sync-api-url" placeholder="https://api.yourcompany.com/dashing" class="setting-input sync-input">
+                      </div>
+                      
+                      <div class="setting-item">
+                        <div class="setting-info">
+                          <label for="sync-api-key">API Key</label>
+                          <span class="setting-description">Authentication key for your backend</span>
+                        </div>
+                        <input type="password" id="sync-api-key" placeholder="sk-..." class="setting-input sync-input">
+                      </div>
+                      
+                      <div class="setting-item">
+                        <div class="setting-info">
+                          <label>Auto-sync</label>
+                          <span class="setting-description">Automatically sync completed sessions</span>
+                        </div>
+                        <label class="toggle-switch">
+                          <input type="checkbox" id="sync-auto-toggle">
+                          <span class="toggle-slider"></span>
+                        </label>
+                      </div>
+                    </div>
+                    
+                    <div class="sync-actions">
+                      <button class="btn btn-primary btn-sm" id="sync-save-config-btn">Save Configuration</button>
+                      <button class="btn btn-secondary btn-sm" id="sync-test-btn">Test Connection</button>
+                    </div>
+                    
+                    <div class="sync-queue-summary" id="sync-queue-summary">
+                      <h4>Sync Queue</h4>
+                      <div class="queue-stats">
+                        <div class="queue-stat">
+                          <span class="stat-value" id="sync-pending-count">0</span>
+                          <span class="stat-label">Pending</span>
+                        </div>
+                        <div class="queue-stat">
+                          <span class="stat-value" id="sync-synced-count">0</span>
+                          <span class="stat-label">Synced</span>
+                        </div>
+                        <div class="queue-stat">
+                          <span class="stat-value" id="sync-failed-count">0</span>
+                          <span class="stat-label">Failed</span>
+                        </div>
+                      </div>
+                      <button class="btn btn-sm btn-ghost" id="sync-retry-failed-btn">Retry Failed</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Session Limits Sub-View -->
+              <div class="settings-section-content hidden" id="section-session-limits">
+                <div class="settings-card">
+                  <h3 class="settings-section-title">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <rect x="3" y="3" width="7" height="7"/>
+                      <rect x="14" y="3" width="7" height="7"/>
+                      <rect x="14" y="14" width="7" height="7"/>
+                      <rect x="3" y="14" width="7" height="7"/>
+                    </svg>
+                    Session Limits
+                  </h3>
+                  <div class="settings-group">
+                    <div class="setting-item">
+                      <div class="setting-info">
+                        <label for="max-sessions">Maximum Active Sessions</label>
+                        <span class="setting-description">Limit the number of concurrent testing sessions</span>
+                      </div>
+                      <input type="number" id="max-sessions" min="1" max="10" value="5" class="setting-input">
+                    </div>
+                    <div class="setting-item">
+                      <div class="setting-info">
+                        <label for="max-windows">Maximum Windows per Session</label>
+                        <span class="setting-description">Limit browser windows per session for multi-user flows</span>
+                      </div>
+                      <input type="number" id="max-windows" min="1" max="10" value="5" class="setting-input">
+                    </div>
+                  </div>
+                  <p class="tier-limit-note" id="tier-limit-note"></p>
+                </div>
+              </div>
+              
+              <!-- Data Management Sub-View -->
+              <div class="settings-section-content hidden" id="section-data-management">
+                <div class="settings-card">
+                  <h3 class="settings-section-title">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <ellipse cx="12" cy="5" rx="9" ry="3"/>
+                      <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/>
+                      <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>
+                    </svg>
+                    Data Management
+                  </h3>
+                  <div class="settings-group">
+                    <div class="setting-item">
+                      <div class="setting-info">
+                        <label>Clear All Session History</label>
+                        <span class="setting-description">Permanently delete all completed sessions and their data</span>
+                      </div>
+                      <button class="btn btn-danger btn-sm" id="clear-history-btn">Clear History</button>
+                    </div>
+                    <div class="setting-item">
+                      <div class="setting-info">
+                        <label>Export All Data</label>
+                        <span class="setting-description">Download all your session data as a JSON file</span>
+                      </div>
+                      <button class="btn btn-secondary btn-sm" id="export-data-btn">Export Data</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Session Rules Sub-View -->
+              <div class="settings-section-content hidden" id="section-session-rules">
+                <div class="settings-card">
+                  <h3 class="settings-section-title">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+                      <path d="M2 17l10 5 10-5"/>
+                      <path d="M2 12l10 5 10-5"/>
+                    </svg>
+                    Session Rules
+                  </h3>
+                  
+                  <!-- Rules Container -->
+                  <div id="session-rules-container">
+                    <!-- Empty State -->
+                    <div class="rules-empty-state" id="rules-empty-state">
+                      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+                        <path d="M2 17l10 5 10-5"/>
+                        <path d="M2 12l10 5 10-5"/>
+                      </svg>
+                      <h4>No rules set</h4>
+                      <p>Create rules to automate session and window behaviors</p>
+                      <button class="btn btn-primary" id="create-rule-btn">Create Rule</button>
+                    </div>
+                    
+                    <!-- Rules List (shown when rules exist) -->
+                    <div class="rules-list hidden" id="rules-list">
+                      <!-- Rules will be rendered here dynamically -->
+                    </div>
+                    
+                    <!-- Add Rule Button (shown when rules exist) -->
+                    <div class="rules-actions hidden" id="rules-actions">
+                      <button class="btn btn-secondary btn-sm" id="add-rule-btn">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <line x1="12" y1="5" x2="12" y2="19"/>
+                          <line x1="5" y1="12" x2="19" y2="12"/>
+                        </svg>
+                        Add Rule
+                      </button>
+                    </div>
+                    
+                    <!-- Save Button -->
+                    <div class="rules-save-container hidden" id="rules-save-container">
+                      <button class="btn btn-primary" id="save-rules-btn">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/>
+                          <polyline points="17 21 17 13 7 13 7 21"/>
+                          <polyline points="7 3 7 8 15 8"/>
+                        </svg>
+                        Save Rules
+                      </button>
+                      <span class="rules-unsaved-indicator hidden" id="rules-unsaved-indicator">Unsaved changes</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Integrations Sub-View -->
+              <div class="settings-section-content hidden" id="section-integrations">
+                <div class="settings-card">
+                  <h3 class="settings-section-title">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <circle cx="12" cy="12" r="3"/>
+                      <path d="M12 2a2 2 0 012 2c0 .74-.4 1.39-1 1.73v1.54a3 3 0 012.54 2.54h1.54c.34-.6.99-1 1.73-1a2 2 0 110 4c-.74 0-1.39-.4-1.73-1h-1.54a3 3 0 01-2.54 2.54v1.54c.6.34 1 .99 1 1.73a2 2 0 11-4 0c0-.74.4-1.39 1-1.73v-1.54a3 3 0 01-2.54-2.54H5.73c-.34.6-.99 1-1.73 1a2 2 0 110-4c.74 0 1.39.4 1.73 1h1.54A3 3 0 019.81 7.27V5.73c-.6-.34-1-.99-1-1.73a2 2 0 114 0z"/>
+                    </svg>
+                    AI Providers
+                  </h3>
+                  <p class="settings-description">Connect AI providers to enable intelligent test case generation and code optimization.</p>
+                  
+                  <!-- AI Providers List -->
+                  <div class="ai-providers-list" id="ai-providers-list">
+                    <!-- OpenAI Provider Card -->
+                    <div class="ai-provider-card" data-provider="openai">
+                      <div class="ai-provider-drag-handle" title="Drag to reorder">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <line x1="8" y1="6" x2="16" y2="6"/>
+                          <line x1="8" y1="12" x2="16" y2="12"/>
+                          <line x1="8" y1="18" x2="16" y2="18"/>
+                        </svg>
+                      </div>
+                      <div class="ai-provider-icon openai">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                          <path d="M22.2819 9.8211a5.9847 5.9847 0 0 0-.5157-4.9108 6.0462 6.0462 0 0 0-6.5098-2.9A6.0651 6.0651 0 0 0 4.9807 4.1818a5.9847 5.9847 0 0 0-3.9977 2.9 6.0462 6.0462 0 0 0 .7427 7.0966 5.98 5.98 0 0 0 .511 4.9107 6.051 6.051 0 0 0 6.5146 2.9001A5.9847 5.9847 0 0 0 13.2599 24a6.0557 6.0557 0 0 0 5.7718-4.2058 5.9894 5.9894 0 0 0 3.9977-2.9001 6.0557 6.0557 0 0 0-.7475-7.0729zm-9.022 12.6081a4.4755 4.4755 0 0 1-2.8764-1.0408l.1419-.0804 4.7783-2.7582a.7948.7948 0 0 0 .3927-.6813v-6.7369l2.02 1.1686a.071.071 0 0 1 .038.052v5.5826a4.504 4.504 0 0 1-4.4945 4.4944zm-9.6607-4.1254a4.4708 4.4708 0 0 1-.5346-3.0137l.142.0852 4.783 2.7582a.7712.7712 0 0 0 .7806 0l5.8428-3.3685v2.3324a.0804.0804 0 0 1-.0332.0615L9.74 19.9502a4.4992 4.4992 0 0 1-6.1408-1.6464zM2.3408 7.8956a4.485 4.485 0 0 1 2.3655-1.9728V11.6a.7664.7664 0 0 0 .3879.6765l5.8144 3.3543-2.0201 1.1685a.0757.0757 0 0 1-.071 0l-4.8303-2.7865A4.504 4.504 0 0 1 2.3408 7.8956zm16.5963 3.8558L13.1038 8.364 15.1192 7.2a.0757.0757 0 0 1 .071 0l4.8303 2.7913a4.4944 4.4944 0 0 1-.6765 8.1042v-5.6772a.79.79 0 0 0-.407-.667zm2.0107-3.0231l-.142-.0852-4.7735-2.7818a.7759.7759 0 0 0-.7854 0L9.409 9.2297V6.8974a.0662.0662 0 0 1 .0284-.0615l4.8303-2.7866a4.4992 4.4992 0 0 1 6.6802 4.66zM8.3065 12.863l-2.02-1.1638a.0804.0804 0 0 1-.038-.0567V6.0742a4.4992 4.4992 0 0 1 7.3757-3.4537l-.142.0805L8.704 5.459a.7948.7948 0 0 0-.3927.6813zm1.0976-2.3654l2.602-1.4998 2.6069 1.4998v2.9994l-2.5974 1.4997-2.6067-1.4997Z"/>
+                        </svg>
+                      </div>
+                      <div class="ai-provider-info">
+                        <h4>OpenAI</h4>
+                        <span class="ai-provider-model" id="openai-model">Not configured</span>
+                      </div>
+                      <div class="ai-provider-status" id="openai-status">
+                        <span class="status-dot disconnected"></span>
+                        <span class="status-text">Not Connected</span>
+                      </div>
+                      <button class="btn btn-sm btn-secondary ai-provider-configure" data-provider="openai">Configure</button>
+                    </div>
+                    
+                    <!-- Anthropic Provider Card -->
+                    <div class="ai-provider-card" data-provider="anthropic">
+                      <div class="ai-provider-drag-handle" title="Drag to reorder">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <line x1="8" y1="6" x2="16" y2="6"/>
+                          <line x1="8" y1="12" x2="16" y2="12"/>
+                          <line x1="8" y1="18" x2="16" y2="18"/>
+                        </svg>
+                      </div>
+                      <div class="ai-provider-icon anthropic">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                          <path d="M17.304 3.541h-3.672l6.696 16.918h3.672zm-10.608 0L0 20.459h3.744l1.38-3.6h7.044l1.38 3.6h3.744L10.608 3.541zm.012 10.422l2.34-6.084 2.328 6.084z"/>
+                        </svg>
+                      </div>
+                      <div class="ai-provider-info">
+                        <h4>Anthropic</h4>
+                        <span class="ai-provider-model" id="anthropic-model">Not configured</span>
+                      </div>
+                      <div class="ai-provider-status" id="anthropic-status">
+                        <span class="status-dot disconnected"></span>
+                        <span class="status-text">Not Connected</span>
+                      </div>
+                      <button class="btn btn-sm btn-secondary ai-provider-configure" data-provider="anthropic">Configure</button>
+                    </div>
+                    
+                    <!-- Gemini Provider Card -->
+                    <div class="ai-provider-card" data-provider="gemini">
+                      <div class="ai-provider-drag-handle" title="Drag to reorder">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <line x1="8" y1="6" x2="16" y2="6"/>
+                          <line x1="8" y1="12" x2="16" y2="12"/>
+                          <line x1="8" y1="18" x2="16" y2="18"/>
+                        </svg>
+                      </div>
+                      <div class="ai-provider-icon gemini">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                          <path d="M12 24A14.304 14.304 0 000 12 14.304 14.304 0 0012 0a14.305 14.305 0 0012 12 14.305 14.305 0 00-12 12"/>
+                        </svg>
+                      </div>
+                      <div class="ai-provider-info">
+                        <h4>Google Gemini</h4>
+                        <span class="ai-provider-model" id="gemini-model">Not configured</span>
+                      </div>
+                      <div class="ai-provider-status" id="gemini-status">
+                        <span class="status-dot disconnected"></span>
+                        <span class="status-text">Not Connected</span>
+                      </div>
+                      <button class="btn btn-sm btn-secondary ai-provider-configure" data-provider="gemini">Configure</button>
+                    </div>
+                  </div>
+                  
+                  <!-- Auto-Fallback Toggle -->
+                  <div class="ai-settings-group">
+                    <div class="setting-item">
+                      <div class="setting-info">
+                        <label>Auto-Fallback</label>
+                        <span class="setting-description">Automatically try next provider if primary fails</span>
+                      </div>
+                      <label class="toggle-switch">
+                        <input type="checkbox" id="ai-auto-fallback" checked>
+                        <span class="toggle-slider"></span>
+                      </label>
+                    </div>
+                  </div>
+                  
+                  <p class="ai-priority-note">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <circle cx="12" cy="12" r="10"/>
+                      <line x1="12" y1="16" x2="12" y2="12"/>
+                      <line x1="12" y1="8" x2="12.01" y2="8"/>
+                    </svg>
+                    Drag providers to set priority order. The first enabled provider will be used by default.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+        
+        <!-- Generated Page -->
+        <div class="page" id="page-generated">
+          <section class="section generated-tests">
+            <div class="section-header">
+              <h2>Generated Tests</h2>
+              <div class="section-actions">
+                <button class="btn btn-sm btn-secondary" id="open-generated-folder-btn" title="Open generated tests folder">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/>
+                  </svg>
+                  Open Folder
+                </button>
+              </div>
+            </div>
+            
+            <div id="generated-list" class="generated-list">
+              <!-- AI jobs and generated projects will be rendered here as line items -->
+            </div>
+            
+            <div class="empty-state-container hidden" id="no-generated">
+              <div class="empty-state">
+                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+                  <polyline points="14,2 14,8 20,8"/>
+                  <line x1="16" y1="13" x2="8" y2="13"/>
+                  <line x1="16" y1="17" x2="8" y2="17"/>
+                </svg>
+                <h3>No Generated Tests</h3>
+                <p>Generate test code from your recorded sessions in the History section.</p>
+              </div>
+            </div>
+          </section>
+        </div>
+      </main>
+    </div>
+
+    <!-- Create Session Modal -->
+    <div id="create-session-modal" class="modal hidden">
+      <div class="modal-backdrop"></div>
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>Create New Session</h3>
+          <button class="modal-close" id="modal-close-btn">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+        <form id="create-session-form" class="modal-form">
+          <div class="form-group">
+            <label for="session-name">Session Name *</label>
+            <input type="text" id="session-name" placeholder="e.g., Login Flow Testing" required>
+          </div>
+          <div class="form-group">
+            <label for="session-description">Description</label>
+            <textarea id="session-description" placeholder="What are you testing?" rows="3"></textarea>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="test-suite">Test Suite</label>
+              <input type="text" id="test-suite" placeholder="e.g., Sprint 42">
+            </div>
+            <div class="form-group">
+              <label for="environment">Environment</label>
+              <select id="environment">
+                <option value="development">Development</option>
+                <option value="staging">Staging</option>
+                <option value="production">Production</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="window-label">First Window Label</label>
+            <input type="text" id="window-label" placeholder="e.g., User A, Admin, Main Browser" value="Main Browser">
+          </div>
+          <div class="modal-actions">
+            <button type="button" class="btn btn-secondary" id="modal-cancel-btn">Cancel</button>
+            <button type="submit" class="btn btn-primary">Create Session</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Actions Modal -->
+    <div id="actions-modal" class="modal hidden">
+      <div class="modal-backdrop"></div>
+      <div class="modal-content modal-lg">
+        <div class="modal-header">
+          <h3 id="actions-modal-title">Session Actions</h3>
+          <button class="modal-close" id="actions-modal-close">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+        <div class="modal-body" id="actions-modal-body">
+          <div class="actions-loading">Loading actions...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Generate Test Modal -->
+    <div id="generate-modal" class="modal hidden">
+      <div class="modal-backdrop"></div>
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>Generate Test Code</h3>
+          <button class="modal-close" id="generate-modal-close">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+        <form id="generate-form" class="modal-form">
+          <input type="hidden" id="generate-session-id" value="">
+          
+          <div class="form-group">
+            <label for="generate-test-name">Test Name *</label>
+            <input type="text" id="generate-test-name" placeholder="e.g., User Login Flow Test" required>
+          </div>
+          
+          <div class="form-row">
+            <div class="form-group">
+              <label for="generate-framework">Framework</label>
+              <select id="generate-framework">
+                <option value="playwright">Playwright</option>
+                <option value="cypress" disabled>Cypress (Coming Soon)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="generate-language">Language</label>
+              <select id="generate-language">
+                <option value="typescript">TypeScript</option>
+                <option value="javascript" disabled>JavaScript (Coming Soon)</option>
+              </select>
+            </div>
+          </div>
+          
+          <div class="form-group">
+            <label>Pages Detected</label>
+            <div class="pages-preview" id="generate-pages-preview">
+              <div class="loading-spinner">Detecting pages...</div>
+            </div>
+          </div>
+          
+          <div class="form-group">
+            <label>Output Path</label>
+            <div class="output-path" id="generate-output-path">
+              <code>~/dashing-generated/</code>
+            </div>
+          </div>
+          
+          <div class="modal-actions">
+            <button type="button" class="btn btn-secondary" id="generate-cancel-btn">Cancel</button>
+            <button type="submit" class="btn btn-primary" id="generate-submit-btn">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+                <polyline points="14,2 14,8 20,8"/>
+              </svg>
+              Generate
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Test Cases Modal -->
+    <div id="test-cases-modal" class="modal hidden">
+      <div class="modal-backdrop"></div>
+      <div class="modal-content modal-xl">
+        <div class="modal-header">
+          <div class="modal-header-left">
+            <h3 id="test-cases-modal-title">Test Cases</h3>
+            <span class="test-cases-session-name" id="test-cases-session-name"></span>
+          </div>
+          <div class="modal-header-actions">
+            <button class="btn btn-sm btn-secondary" id="test-cases-export-csv-btn" title="Export as CSV">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+                <polyline points="14,2 14,8 20,8"/>
+                <line x1="8" y1="13" x2="16" y2="13"/>
+                <line x1="8" y1="17" x2="16" y2="17"/>
+              </svg>
+              CSV
+            </button>
+            <button class="btn btn-sm btn-secondary" id="test-cases-export-excel-btn" title="Export as Excel">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+                <polyline points="14,2 14,8 20,8"/>
+                <path d="M8 13l2.5 4 2.5-4"/>
+                <path d="M13 17l2.5-4 2.5 4"/>
+              </svg>
+              Excel
+            </button>
+            <button class="btn btn-sm btn-secondary" id="test-cases-export-md-btn" title="Export as Markdown">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+                <polyline points="14,2 14,8 20,8"/>
+              </svg>
+              MD
+            </button>
+            <button class="btn btn-sm btn-secondary" id="test-cases-export-pw-btn" title="Export as Playwright">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="16,18 22,12 16,6"/>
+                <polyline points="8,6 2,12 8,18"/>
+              </svg>
+              Playwright
+            </button>
+            <button class="modal-close" id="test-cases-modal-close">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </button>
+          </div>
+        </div>
+        
+        <!-- Stats Summary -->
+        <div class="test-cases-stats" id="test-cases-stats">
+          <div class="tc-stat">
+            <span class="tc-stat-value" id="tc-total">0</span>
+            <span class="tc-stat-label">Total</span>
+          </div>
+          <div class="tc-stat tc-stat-pending">
+            <span class="tc-stat-value" id="tc-pending">0</span>
+            <span class="tc-stat-label">Pending</span>
+          </div>
+          <div class="tc-stat tc-stat-passed">
+            <span class="tc-stat-value" id="tc-passed">0</span>
+            <span class="tc-stat-label">Passed</span>
+          </div>
+          <div class="tc-stat tc-stat-failed">
+            <span class="tc-stat-value" id="tc-failed">0</span>
+            <span class="tc-stat-label">Failed</span>
+          </div>
+          <div class="tc-stat tc-stat-skipped">
+            <span class="tc-stat-value" id="tc-skipped">0</span>
+            <span class="tc-stat-label">Skipped</span>
+          </div>
+        </div>
+        
+        <!-- Filter Bar -->
+        <div class="test-cases-filters">
+          <div class="filter-group">
+            <label>Status:</label>
+            <select id="tc-filter-status" class="filter-select">
+              <option value="all">All</option>
+              <option value="pending">Pending</option>
+              <option value="passed">Passed</option>
+              <option value="failed">Failed</option>
+              <option value="skipped">Skipped</option>
+            </select>
+          </div>
+          <div class="filter-group">
+            <label>Priority:</label>
+            <select id="tc-filter-priority" class="filter-select">
+              <option value="all">All</option>
+              <option value="critical">Critical</option>
+              <option value="high">High</option>
+              <option value="medium">Medium</option>
+              <option value="low">Low</option>
+            </select>
+          </div>
+          <div class="filter-group">
+            <label>Category:</label>
+            <select id="tc-filter-category" class="filter-select">
+              <option value="all">All</option>
+              <option value="required">Required</option>
+              <option value="boundary">Boundary</option>
+              <option value="negative">Negative</option>
+              <option value="format">Format</option>
+              <option value="security">Security</option>
+            </select>
+          </div>
+          <div class="filter-group">
+            <label>Source:</label>
+            <select id="tc-filter-source" class="filter-select">
+              <option value="all">All</option>
+              <option value="auto">Auto-generated</option>
+              <option value="manual">Manual</option>
+            </select>
+          </div>
+        </div>
+        
+        <!-- Test Cases List with Collapsible Sections -->
+        <div class="modal-body test-cases-body" id="test-cases-body">
+          <!-- Collapsible Status Sections -->
+          <div class="test-cases-sections" id="test-cases-sections">
+            <!-- Untested Section -->
+            <div class="test-cases-section" data-section="pending">
+              <div class="test-cases-section-header" data-toggle="pending">
+                <svg class="section-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="6 9 12 15 18 9"/>
+                </svg>
+                <span class="section-title">Untested</span>
+                <span class="section-count" id="section-count-pending">0</span>
+              </div>
+              <div class="test-cases-section-body" id="section-list-pending">
+                <!-- Test case cards will be rendered here -->
+              </div>
+            </div>
+
+            <!-- Passed Section -->
+            <div class="test-cases-section" data-section="passed">
+              <div class="test-cases-section-header" data-toggle="passed">
+                <svg class="section-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="6 9 12 15 18 9"/>
+                </svg>
+                <span class="section-title">Passed</span>
+                <span class="section-count passed" id="section-count-passed">0</span>
+              </div>
+              <div class="test-cases-section-body collapsed" id="section-list-passed">
+                <!-- Test case cards will be rendered here -->
+              </div>
+            </div>
+
+            <!-- Failed Section -->
+            <div class="test-cases-section" data-section="failed">
+              <div class="test-cases-section-header" data-toggle="failed">
+                <svg class="section-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="6 9 12 15 18 9"/>
+                </svg>
+                <span class="section-title">Failed</span>
+                <span class="section-count failed" id="section-count-failed">0</span>
+              </div>
+              <div class="test-cases-section-body collapsed" id="section-list-failed">
+                <!-- Test case cards will be rendered here -->
+              </div>
+            </div>
+
+            <!-- Skipped Section -->
+            <div class="test-cases-section" data-section="skipped">
+              <div class="test-cases-section-header" data-toggle="skipped">
+                <svg class="section-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="6 9 12 15 18 9"/>
+                </svg>
+                <span class="section-title">Skipped</span>
+                <span class="section-count skipped" id="section-count-skipped">0</span>
+              </div>
+              <div class="test-cases-section-body collapsed" id="section-list-skipped">
+                <!-- Test case cards will be rendered here -->
+              </div>
+            </div>
+          </div>
+          
+          <div class="test-cases-empty hidden" id="test-cases-empty">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M9 11l3 3L22 4"/>
+              <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>
+            </svg>
+            <p>No test cases found</p>
+            <span>Try adjusting the filters</span>
+          </div>
+          <div class="test-cases-loading hidden" id="test-cases-loading">
+            <div class="loading-spinner"></div>
+            <p>Loading test cases...</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Test Case Detail Modal -->
+    <div id="test-case-detail-modal" class="modal hidden">
+      <div class="modal-backdrop"></div>
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3 id="tc-detail-title">Test Case</h3>
+          <button class="modal-close" id="tc-detail-close">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+        <div class="modal-body tc-detail-body">
+          <input type="hidden" id="tc-detail-id" value="">
+          
+          <div class="tc-detail-section">
+            <label>Field</label>
+            <p id="tc-detail-field" class="tc-detail-value"></p>
+          </div>
+          
+          <div class="tc-detail-section">
+            <label>Description</label>
+            <p id="tc-detail-description" class="tc-detail-value"></p>
+          </div>
+          
+          <div class="tc-detail-row">
+            <div class="tc-detail-section">
+              <label>Category</label>
+              <span id="tc-detail-category" class="tc-badge"></span>
+            </div>
+            <div class="tc-detail-section">
+              <label>Priority</label>
+              <span id="tc-detail-priority" class="tc-badge"></span>
+            </div>
+          </div>
+          
+          <div class="tc-detail-section">
+            <label>Test Value</label>
+            <code id="tc-detail-test-value" class="tc-code"></code>
+          </div>
+          
+          <div class="tc-detail-section">
+            <label>Expected Result</label>
+            <p id="tc-detail-expected" class="tc-detail-value"></p>
+          </div>
+          
+          <div class="tc-detail-section">
+            <label>Playwright Code</label>
+            <pre id="tc-detail-code" class="tc-code-block"></pre>
+          </div>
+          
+          <div class="tc-detail-section">
+            <label>Notes (optional)</label>
+            <textarea id="tc-detail-notes" rows="3" placeholder="Add notes about this test case..."></textarea>
+          </div>
+          
+          <div class="tc-detail-section">
+            <label>Status</label>
+            <div class="tc-status-buttons" id="tc-status-buttons">
+              <button type="button" class="tc-status-btn tc-status-pending" data-status="pending">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"/>
+                </svg>
+                Pending
+              </button>
+              <button type="button" class="tc-status-btn tc-status-passed" data-status="passed">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M22 11.08V12a10 10 0 11-5.93-9.14"/>
+                  <polyline points="22 4 12 14.01 9 11.01"/>
+                </svg>
+                Passed
+              </button>
+              <button type="button" class="tc-status-btn tc-status-failed" data-status="failed">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"/>
+                  <line x1="15" y1="9" x2="9" y2="15"/>
+                  <line x1="9" y1="9" x2="15" y2="15"/>
+                </svg>
+                Failed
+              </button>
+              <button type="button" class="tc-status-btn tc-status-skipped" data-status="skipped">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polygon points="5 4 15 12 5 20 5 4"/>
+                  <line x1="19" y1="5" x2="19" y2="19"/>
+                </svg>
+                Skipped
+              </button>
+            </div>
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" id="tc-detail-cancel">Close</button>
+          <button type="button" class="btn btn-primary" id="tc-detail-save">Save Changes</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Limit Reached Toast -->
+    <div id="limit-toast" class="toast hidden">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"/>
+        <line x1="12" y1="8" x2="12" y2="12"/>
+        <line x1="12" y1="16" x2="12.01" y2="16"/>
+      </svg>
+      <span id="limit-toast-message">Limit reached</span>
+    </div>
+
+    <!-- AI Provider Configuration Modal -->
+    <div id="ai-provider-modal" class="modal hidden">
+      <div class="modal-backdrop"></div>
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3 id="ai-provider-modal-title">Configure OpenAI</h3>
+          <button class="modal-close" id="ai-provider-modal-close">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+        <div class="modal-body ai-provider-modal-body">
+          <input type="hidden" id="ai-provider-id" value="">
+          
+          <div class="form-group">
+            <label for="ai-api-key">API Key <span class="required">*</span></label>
+            <div class="api-key-input-group">
+              <input type="password" id="ai-api-key" placeholder="Enter your API key" class="setting-input">
+              <button type="button" class="btn btn-icon btn-ghost" id="ai-api-key-toggle" title="Show/Hide">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                  <circle cx="12" cy="12" r="3"/>
+                </svg>
+              </button>
+            </div>
+            <span class="setting-description" id="ai-api-key-hint">Get your API key from the provider's dashboard</span>
+          </div>
+          
+          <div class="form-group">
+            <label for="ai-model-select">Model</label>
+            <select id="ai-model-select" class="setting-input" disabled>
+              <option value="">Validate API key first</option>
+            </select>
+            <span class="setting-description">Select the model to use for AI operations</span>
+          </div>
+          
+          <div class="form-group">
+            <div class="setting-item">
+              <div class="setting-info">
+                <label>Enable Provider</label>
+                <span class="setting-description">Include this provider in the active providers list</span>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="ai-provider-enabled">
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+          </div>
+          
+          <!-- Validation Status -->
+          <div class="ai-validation-status hidden" id="ai-validation-status">
+            <div class="ai-validation-loading hidden" id="ai-validation-loading">
+              <div class="loading-spinner small"></div>
+              <span>Validating API key...</span>
+            </div>
+            <div class="ai-validation-success hidden" id="ai-validation-success">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M22 11.08V12a10 10 0 11-5.93-9.14"/>
+                <polyline points="22 4 12 14.01 9 11.01"/>
+              </svg>
+              <span>API key is valid</span>
+            </div>
+            <div class="ai-validation-error hidden" id="ai-validation-error">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="15" y1="9" x2="9" y2="15"/>
+                <line x1="9" y1="9" x2="15" y2="15"/>
+              </svg>
+              <span id="ai-validation-error-msg">Invalid API key</span>
+            </div>
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" id="ai-provider-test-btn">Test Connection</button>
+          <div class="modal-actions-right">
+            <button type="button" class="btn btn-secondary" id="ai-provider-cancel-btn">Cancel</button>
+            <button type="button" class="btn btn-primary" id="ai-provider-save-btn" disabled>Save</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- AI Generation Modal -->
+    <div id="ai-generation-modal" class="modal hidden">
+      <div class="modal-backdrop"></div>
+      <div class="modal-content ai-generation-modal-content">
+        <div class="modal-header">
+          <h3 id="ai-modal-title">Generate AI Test Cases</h3>
+          <button class="modal-close" id="ai-generation-modal-close">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+        <div class="modal-body ai-generation-modal-body">
+          <!-- Warning Banner -->
+          <div class="ai-warning-banner">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+              <line x1="12" y1="9" x2="12" y2="13"/>
+              <line x1="12" y1="17" x2="12.01" y2="17"/>
+            </svg>
+            <div class="ai-warning-content">
+              <p><strong>Data Privacy Notice:</strong> The selected actions will be shared with the AI provider for analysis.</p>
+              <p>Sensitive data (emails, passwords, credit cards, etc.) will be automatically masked before sending.</p>
+              <label class="ai-consent-label">
+                <input type="checkbox" id="ai-consent-checkbox">
+                <span>I understand and agree to proceed</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Masking Summary -->
+          <div class="ai-masking-summary hidden" id="ai-masking-summary">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+              <path d="M7 11V7a5 5 0 0110 0v4"/>
+            </svg>
+            <span id="ai-masking-count">0 sensitive values will be masked</span>
+          </div>
+
+          <!-- AI Provider Selection -->
+          <div class="ai-provider-selection">
+            <div class="form-row">
+              <div class="form-group">
+                <label for="ai-gen-provider">AI Provider</label>
+                <select id="ai-gen-provider" class="setting-input">
+                  <!-- Populated dynamically -->
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="ai-gen-model">Model</label>
+                <select id="ai-gen-model" class="setting-input">
+                  <!-- Populated based on provider -->
+                </select>
+              </div>
+            </div>
+            <div class="ai-no-providers hidden" id="ai-no-providers">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="12" y1="8" x2="12" y2="12"/>
+                <line x1="12" y1="16" x2="12.01" y2="16"/>
+              </svg>
+              <span>No AI providers configured. <a href="#" id="ai-goto-settings">Configure in Settings</a></span>
+            </div>
+          </div>
+
+          <!-- Actions Selection Section -->
+          <div class="ai-actions-section">
+            <div class="ai-actions-header">
+              <h4>Select Actions to Include</h4>
+              <div class="ai-actions-controls">
+                <button type="button" class="btn btn-sm btn-ghost" id="ai-select-all-btn">Select All</button>
+                <button type="button" class="btn btn-sm btn-ghost" id="ai-deselect-all-btn">Deselect All</button>
+              </div>
+            </div>
+            <div id="ai-actions-list" class="ai-actions-list">
+              <!-- Actions will be rendered here -->
+            </div>
+            <div class="ai-actions-count">
+              <span id="ai-selected-count">0</span> of <span id="ai-total-count">0</span> actions selected
+            </div>
+          </div>
+
+          <!-- Code Generation Options (hidden for test cases mode) -->
+          <div id="ai-code-options" class="ai-code-options hidden">
+            <div class="form-group">
+              <label for="ai-code-mode">Generation Mode</label>
+              <select id="ai-code-mode" class="setting-input">
+                <option value="code-new">Generate new optimized code from actions</option>
+                <option value="code-optimize">Optimize existing generated code</option>
+              </select>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="ai-framework">Framework</label>
+                <select id="ai-framework" class="setting-input">
+                  <option value="playwright">Playwright</option>
+                  <option value="cypress">Cypress</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="ai-language">Language</label>
+                <select id="ai-language" class="setting-input">
+                  <option value="typescript">TypeScript</option>
+                  <option value="javascript">JavaScript</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- Loading State -->
+          <div id="ai-loading-section" class="ai-loading-section hidden">
+            <div class="loading-spinner"></div>
+            <p id="ai-loading-message">Generating test cases with AI...</p>
+            <p class="ai-loading-note">This may take 10-30 seconds depending on the number of actions.</p>
+          </div>
+
+          <!-- Test Cases Results Section -->
+          <div id="ai-testcases-results" class="ai-results-section hidden">
+            <div class="ai-results-header">
+              <h4>Generated Test Cases</h4>
+              <div class="ai-results-controls">
+                <button type="button" class="btn btn-sm btn-ghost" id="ai-tc-select-all">Select All</button>
+                <button type="button" class="btn btn-sm btn-ghost" id="ai-tc-deselect-all">Deselect All</button>
+              </div>
+            </div>
+            <div id="ai-testcases-list" class="ai-testcases-list">
+              <!-- Generated test cases will be rendered here -->
+            </div>
+            <div class="ai-results-footer">
+              <span><span id="ai-tc-selected-count">0</span> test cases selected</span>
+              <span class="ai-tokens-used" id="ai-tokens-used"></span>
+            </div>
+          </div>
+
+          <!-- Code Results Section -->
+          <div id="ai-code-results" class="ai-results-section hidden">
+            <div class="ai-results-header">
+              <h4>Generated Code</h4>
+              <button type="button" class="btn btn-sm btn-ghost" id="ai-copy-code-btn">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                  <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
+                </svg>
+                Copy
+              </button>
+            </div>
+            <pre id="ai-code-preview" class="ai-code-preview"><code></code></pre>
+            <div class="ai-results-footer">
+              <span id="ai-code-changes"></span>
+              <span class="ai-tokens-used" id="ai-code-tokens-used"></span>
+            </div>
+          </div>
+
+          <!-- Error State -->
+          <div id="ai-error-section" class="ai-error-section hidden">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/>
+              <line x1="15" y1="9" x2="9" y2="15"/>
+              <line x1="9" y1="9" x2="15" y2="15"/>
+            </svg>
+            <p id="ai-error-message">An error occurred</p>
+            <button type="button" class="btn btn-secondary" id="ai-retry-btn">Retry</button>
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" id="ai-cancel-btn">Cancel</button>
+          <button type="button" class="btn btn-primary" id="ai-generate-btn" disabled>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+            </svg>
+            Generate
+          </button>
+          <button type="button" class="btn btn-primary hidden" id="ai-move-testcases-btn">
+            Move Selected to Test Cases
+          </button>
+          <button type="button" class="btn btn-primary hidden" id="ai-save-code-btn">
+            Save to Generated
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- AI Job Result Modal -->
+    <div id="ai-result-modal" class="modal hidden">
+      <div class="modal-backdrop"></div>
+      <div class="modal-content ai-result-modal-content">
+        <div class="modal-header">
+          <h3 id="ai-result-modal-title">AI Generation Results</h3>
+          <button class="modal-close" id="ai-result-modal-close">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+        <div class="modal-body ai-result-modal-body">
+          <!-- Job Info -->
+          <div class="ai-result-info">
+            <span id="ai-result-session">Session: </span>
+            <span id="ai-result-provider">Provider: </span>
+            <span id="ai-result-tokens">Tokens: </span>
+          </div>
+          
+          <!-- Test Cases Results -->
+          <div id="ai-result-testcases" class="ai-result-testcases hidden">
+            <div class="ai-result-header">
+              <h4>Generated Test Cases</h4>
+              <div class="ai-result-controls">
+                <button type="button" class="btn btn-sm btn-ghost" id="ai-result-select-all">Select All</button>
+                <button type="button" class="btn btn-sm btn-ghost" id="ai-result-deselect-all">Deselect All</button>
+              </div>
+            </div>
+            <div id="ai-result-testcases-list" class="ai-result-testcases-list">
+              <!-- Test cases will be rendered here -->
+            </div>
+            <div class="ai-result-footer">
+              <span id="ai-result-tc-count">0 test cases selected</span>
+            </div>
+          </div>
+          
+          <!-- Code Results -->
+          <div id="ai-result-code" class="ai-result-code hidden">
+            <div class="ai-result-header">
+              <h4>Generated Code</h4>
+              <button type="button" class="btn btn-sm btn-ghost" id="ai-result-copy-code">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                  <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
+                </svg>
+                Copy
+              </button>
+            </div>
+            <pre id="ai-result-code-preview" class="ai-result-code-preview"><code></code></pre>
+            <div id="ai-result-code-changes" class="ai-result-code-changes hidden">
+              <h5>Changes Made:</h5>
+              <ul id="ai-result-changes-list"></ul>
+            </div>
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" id="ai-result-close-btn">Close</button>
+          <button type="button" class="btn btn-primary hidden" id="ai-result-move-tc-btn">
+            Move Selected to Test Cases
+          </button>
+          <button type="button" class="btn btn-primary hidden" id="ai-result-save-code-btn">
+            Save to Generated
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- AI Error Details Modal -->
+    <div id="ai-error-modal" class="modal hidden">
+      <div class="modal-backdrop"></div>
+      <div class="modal-content ai-error-modal-content">
+        <div class="modal-header">
+          <h3>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: #ff6b6b; vertical-align: middle; margin-right: 8px;">
+              <circle cx="12" cy="12" r="10"/>
+              <line x1="15" y1="9" x2="9" y2="15"/>
+              <line x1="9" y1="9" x2="15" y2="15"/>
+            </svg>
+            AI Generation Failed
+          </h3>
+          <button class="modal-close" id="ai-error-modal-close">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+        <div class="modal-body ai-error-modal-body">
+          <!-- Job Info -->
+          <div class="ai-error-info">
+            <div class="ai-error-info-row">
+              <span class="ai-error-label">Session:</span>
+              <span id="ai-error-session" class="ai-error-value"></span>
+            </div>
+            <div class="ai-error-info-row">
+              <span class="ai-error-label">Type:</span>
+              <span id="ai-error-type" class="ai-error-value"></span>
+            </div>
+            <div class="ai-error-info-row">
+              <span class="ai-error-label">Provider:</span>
+              <span id="ai-error-provider" class="ai-error-value"></span>
+            </div>
+            <div class="ai-error-info-row">
+              <span class="ai-error-label">Started:</span>
+              <span id="ai-error-started" class="ai-error-value"></span>
+            </div>
+            <div class="ai-error-info-row" id="ai-error-tokens-row" style="display: none;">
+              <span class="ai-error-label">Tokens Used:</span>
+              <span id="ai-error-tokens" class="ai-error-value"></span>
+            </div>
+          </div>
+          
+          <!-- Error Message -->
+          <div class="ai-error-message-section">
+            <h4>Error Message</h4>
+            <div id="ai-error-detail-message" class="ai-error-message-box"></div>
+          </div>
+          
+          <!-- Debug File Section -->
+          <div id="ai-error-debug-section" class="ai-error-debug-section hidden">
+            <h4>Debug Information</h4>
+            <p class="ai-error-debug-info">
+              The malformed AI response has been saved for debugging. You can download and inspect it to understand what went wrong.
+            </p>
+            <div class="ai-error-debug-path">
+              <span class="ai-error-label">File:</span>
+              <code id="ai-error-debug-path"></code>
+            </div>
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" id="ai-error-close-btn">Close</button>
+          <button type="button" class="btn btn-secondary" id="ai-error-retry-btn">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M1 4v6h6"/>
+              <path d="M3.51 15a9 9 0 102.13-9.36L1 10"/>
+            </svg>
+            Retry
+          </button>
+          <button type="button" class="btn btn-primary hidden" id="ai-error-download-btn">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+              <polyline points="7 10 12 15 17 10"/>
+              <line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+            Download Debug File
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

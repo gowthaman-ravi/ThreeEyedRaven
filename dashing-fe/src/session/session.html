@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https: http:; connect-src 'self' ws://localhost:* http: https:; frame-src 'self' http: https:;">
+  <title>Dashing - Session</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div id="app">
+    <!-- Window Header -->
+    <header class="window-header">
+      <div class="session-info">
+        <span class="session-label" id="window-label">Main Browser</span>
+        <span class="session-status recording" id="session-status">
+          <span class="recording-dot"></span>
+          Recording
+        </span>
+      </div>
+      <div class="window-controls">
+        <button class="control-btn" id="add-window-btn" title="Add Window">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="3" width="18" height="18" rx="2"/>
+            <line x1="12" y1="8" x2="12" y2="16"/>
+            <line x1="8" y1="12" x2="16" y2="12"/>
+          </svg>
+        </button>
+        <button class="control-btn" id="minimize-btn" title="Minimize">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
+        </button>
+        <button class="control-btn" id="maximize-btn" title="Maximize">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="5" y="5" width="14" height="14" rx="2"/>
+          </svg>
+        </button>
+        <button class="control-btn close" id="close-btn" title="Close Window">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"/>
+            <line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- Tab Bar -->
+    <div class="tab-bar" id="tab-bar">
+      <!-- Tabs will be rendered here -->
+    </div>
+
+    <!-- Navigation Bar -->
+    <div class="nav-bar" id="nav-bar">
+      <div class="nav-controls">
+        <button class="nav-btn" id="back-btn" title="Back" disabled>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="15,18 9,12 15,6"/>
+          </svg>
+        </button>
+        <button class="nav-btn" id="forward-btn" title="Forward" disabled>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="9,18 15,12 9,6"/>
+          </svg>
+        </button>
+        <button class="nav-btn" id="refresh-btn" title="Refresh">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="1,4 1,10 7,10"/>
+            <path d="M3.51 15a9 9 0 102.13-9.36L1 10"/>
+          </svg>
+        </button>
+        <button class="nav-btn" id="home-btn" title="Home">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
+            <polyline points="9,22 9,12 15,12 15,22"/>
+          </svg>
+        </button>
+      </div>
+      <div class="address-bar">
+        <svg class="address-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"/>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <input type="text" id="address-input" placeholder="Enter URL or search..." autocomplete="off">
+        <button class="address-go" id="go-btn" title="Go">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="5" y1="12" x2="19" y2="12"/>
+            <polyline points="12,5 19,12 12,19"/>
+          </svg>
+        </button>
+      </div>
+      <div class="nav-actions">
+        <span class="action-count" id="action-count" title="Recorded Actions">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <circle cx="12" cy="12" r="3"/>
+          </svg>
+          <span>0</span>
+        </span>
+        <span class="error-count" id="error-count" title="Errors">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="12" y1="8" x2="12" y2="12"/>
+            <line x1="12" y1="16" x2="12.01" y2="16"/>
+          </svg>
+          <span>0</span>
+        </span>
+        <button class="tc-checklist-btn" id="tc-checklist-btn" title="TC Checklist">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M9 11l3 3L22 4"/>
+            <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>
+          </svg>
+          <span>TC Checklist</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Main Content (Browser + Side Panel) -->
+    <div class="main-content" id="main-content">
+      <!-- Tab Content -->
+      <div class="tab-content-container" id="tab-content-container">
+        <!-- Tab contents (webviews) will be rendered here -->
+      </div>
+
+      <!-- TC Checklist Side Panel -->
+      <div class="tc-side-panel hidden" id="tc-side-panel">
+        <div class="tc-panel-header">
+          <h3>TC Checklist</h3>
+          <button class="tc-panel-close" id="tc-panel-close" title="Close Panel">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"/>
+              <line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+        </div>
+
+        <!-- Empty State -->
+        <div class="tc-empty-state" id="tc-empty-state">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M9 11l3 3L22 4"/>
+            <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>
+          </svg>
+          <h4>No Test Cases</h4>
+          <p>Upload a CSV file or create test cases manually</p>
+          <div class="tc-empty-actions">
+            <button class="btn btn-secondary" id="tc-upload-btn">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+                <polyline points="17 8 12 3 7 8"/>
+                <line x1="12" y1="3" x2="12" y2="15"/>
+              </svg>
+              Upload CSV
+            </button>
+            <button class="btn btn-primary" id="tc-create-btn">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="12" y1="5" x2="12" y2="19"/>
+                <line x1="5" y1="12" x2="19" y2="12"/>
+              </svg>
+              Create Case
+            </button>
+          </div>
+        </div>
+
+        <!-- Checklist Content (shown when cases exist) -->
+        <div class="tc-checklist-content hidden" id="tc-checklist-content">
+          <!-- Collapsible Sections -->
+          <div class="tc-sections">
+            <!-- Untested Section -->
+            <div class="tc-section" data-section="pending">
+              <div class="tc-section-header" data-toggle="pending">
+                <svg class="tc-section-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="6 9 12 15 18 9"/>
+                </svg>
+                <span class="tc-section-title">Untested</span>
+                <span class="tc-section-count" id="tc-count-pending">0</span>
+              </div>
+              <div class="tc-section-body" id="tc-list-pending">
+                <!-- Test case cards will be rendered here -->
+              </div>
+            </div>
+
+            <!-- Passed Section -->
+            <div class="tc-section" data-section="passed">
+              <div class="tc-section-header" data-toggle="passed">
+                <svg class="tc-section-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="6 9 12 15 18 9"/>
+                </svg>
+                <span class="tc-section-title">Passed</span>
+                <span class="tc-section-count passed" id="tc-count-passed">0</span>
+              </div>
+              <div class="tc-section-body collapsed" id="tc-list-passed">
+                <!-- Test case cards will be rendered here -->
+              </div>
+            </div>
+
+            <!-- Failed Section -->
+            <div class="tc-section" data-section="failed">
+              <div class="tc-section-header" data-toggle="failed">
+                <svg class="tc-section-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="6 9 12 15 18 9"/>
+                </svg>
+                <span class="tc-section-title">Failed</span>
+                <span class="tc-section-count failed" id="tc-count-failed">0</span>
+              </div>
+              <div class="tc-section-body collapsed" id="tc-list-failed">
+                <!-- Test case cards will be rendered here -->
+              </div>
+            </div>
+
+            <!-- Skipped Section -->
+            <div class="tc-section" data-section="skipped">
+              <div class="tc-section-header" data-toggle="skipped">
+                <svg class="tc-section-chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="6 9 12 15 18 9"/>
+                </svg>
+                <span class="tc-section-title">Skipped</span>
+                <span class="tc-section-count skipped" id="tc-count-skipped">0</span>
+              </div>
+              <div class="tc-section-body collapsed" id="tc-list-skipped">
+                <!-- Test case cards will be rendered here -->
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Panel Footer (shown when cases exist) -->
+        <div class="tc-panel-footer hidden" id="tc-panel-footer">
+          <button class="btn btn-secondary btn-sm" id="tc-footer-upload-btn">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/>
+              <polyline points="17 8 12 3 7 8"/>
+              <line x1="12" y1="3" x2="12" y2="15"/>
+            </svg>
+            Upload
+          </button>
+          <button class="btn btn-primary btn-sm" id="tc-footer-create-btn">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="12" y1="5" x2="12" y2="19"/>
+              <line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+            Create Case
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Hidden file input for CSV upload -->
+    <input type="file" id="tc-csv-input" accept=".csv" style="display: none;">
+
+    <!-- TC Create/Edit Modal -->
+    <div class="tc-modal-overlay hidden" id="tc-modal-overlay">
+      <div class="tc-modal">
+        <div class="tc-modal-header">
+          <h3 id="tc-modal-title">Create Test Case</h3>
+          <button class="tc-modal-close" id="tc-modal-close">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"/>
+              <line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+          </button>
+        </div>
+        <div class="tc-modal-body">
+          <div class="tc-form-group">
+            <label for="tc-form-title">Title <span class="required">*</span></label>
+            <input type="text" id="tc-form-title" placeholder="Enter test case title" maxlength="255" required>
+          </div>
+          <div class="tc-form-group">
+            <label for="tc-form-description">Description</label>
+            <textarea id="tc-form-description" placeholder="Optional description" rows="2"></textarea>
+          </div>
+          <div class="tc-form-group">
+            <label for="tc-form-steps">Steps</label>
+            <textarea id="tc-form-steps" placeholder="Optional test steps" rows="3"></textarea>
+          </div>
+          <div class="tc-form-group">
+            <label for="tc-form-expected">Expected Result <span class="required">*</span></label>
+            <textarea id="tc-form-expected" placeholder="Enter expected result" rows="2" required></textarea>
+          </div>
+          <div class="tc-form-group">
+            <label for="tc-form-priority">Priority</label>
+            <select id="tc-form-priority">
+              <option value="critical">Critical</option>
+              <option value="high">High</option>
+              <option value="medium" selected>Medium</option>
+              <option value="low">Low</option>
+            </select>
+          </div>
+        </div>
+        <div class="tc-modal-footer">
+          <button class="btn btn-secondary" id="tc-modal-cancel">Cancel</button>
+          <button class="btn btn-primary" id="tc-modal-save">Save</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Context Menu (custom) -->
+    <div id="context-menu" class="context-menu hidden"></div>
+  </div>
+</body>
+</html>
+

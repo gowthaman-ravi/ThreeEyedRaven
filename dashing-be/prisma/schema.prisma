@@ -1,0 +1,233 @@
+// Dashing API - Database Schema
+// PostgreSQL database for storing synced QA sessions, actions, and errors
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL") // Used for migrations (bypasses pgbouncer)
+}
+
+// ============================================
+// Organization & User Management
+// ============================================
+
+model Organization {
+  id        String   @id @default(uuid())
+  name      String
+  apiKey    String   @unique
+  tier      Tier     @default(FREE)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users    User[]
+  sessions Session[]
+
+  @@map("organizations")
+}
+
+model User {
+  id             String        @id @default(uuid())
+  email          String        @unique
+  name           String?
+  licenseKey     String?       @unique
+  licenseStatus  LicenseStatus @default(INACTIVE)
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id])
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  sessions Session[]
+
+  @@map("users")
+}
+
+// ============================================
+// Session Management
+// ============================================
+
+model Session {
+  id             String        @id // UUID from Electron app
+  name           String
+  status         SessionStatus @default(ACTIVE)
+  startTime      BigInt
+  endTime        BigInt?
+  userId         String?
+  user           User?         @relation(fields: [userId], references: [id])
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id])
+  metadata       Json?
+  syncedAt       DateTime      @default(now())
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  windows   SessionWindow[]
+  actions   Action[]
+  errors    Error[]
+  testCases TestCase[]
+
+  @@index([userId])
+  @@index([organizationId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("sessions")
+}
+
+model SessionWindow {
+  id        String       @id // UUID from Electron app
+  sessionId String
+  session   Session      @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  label     String
+  status    WindowStatus @default(OPEN)
+  createdAt BigInt
+  closedAt  BigInt?
+  syncedAt  DateTime     @default(now())
+
+  actions Action[]
+  errors  Error[]
+
+  @@index([sessionId])
+  @@map("session_windows")
+}
+
+// ============================================
+// Actions & Errors
+// ============================================
+
+model Action {
+  id              String         @id // UUID from Electron app
+  sessionId       String
+  session         Session        @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  windowId        String?
+  window          SessionWindow? @relation(fields: [windowId], references: [id], onDelete: SetNull)
+  windowLabel     String?
+  tabId           String
+  tabUrl          String?
+  tabTitle        String?
+  actionType      String
+  timestamp       BigInt
+  elementSelector String?
+  elementXpath    String?
+  elementTag      String?
+  payload         Json
+  syncedAt        DateTime       @default(now())
+  createdAt       DateTime       @default(now())
+
+  @@index([sessionId, timestamp])
+  @@index([windowId])
+  @@index([actionType])
+  @@map("actions")
+}
+
+model Error {
+  id           String         @id // UUID from Electron app
+  sessionId    String
+  session      Session        @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  windowId     String?
+  window       SessionWindow? @relation(fields: [windowId], references: [id], onDelete: SetNull)
+  windowLabel  String?
+  tabId        String
+  errorType    String
+  message      String
+  source       String?
+  stackTrace   String?
+  timestamp    BigInt
+  statusCode   Int?
+  method       String?
+  resourceType String?
+  syncedAt     DateTime       @default(now())
+  createdAt    DateTime       @default(now())
+
+  @@index([sessionId, timestamp])
+  @@index([windowId])
+  @@index([errorType])
+  @@map("errors")
+}
+
+// ============================================
+// Test Cases (Generated from session analysis)
+// ============================================
+
+model TestCase {
+  id                 String       @id // UUID from Electron app
+  sessionId          String
+  session            Session      @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  fieldId            String?
+  fieldName          String
+  fieldSelector      String?
+  category           TestCategory
+  name               String
+  description        String?
+  testValue          String?
+  expectedResult     String?
+  priority           TestPriority @default(MEDIUM)
+  status             TestStatus   @default(PENDING)
+  notes              String?
+  playwrightCode     String?      @db.Text
+  prerequisiteSteps  Json?        // Array of TestStep objects with navigation path
+  testActionStep     Json?        // Single TestStep object for the test action
+  syncedAt           DateTime     @default(now())
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+
+  @@index([sessionId])
+  @@index([status])
+  @@index([priority])
+  @@index([category])
+  @@map("test_cases")
+}
+
+// ============================================
+// Enums
+// ============================================
+
+enum Tier {
+  FREE
+  PRO
+  ENTERPRISE
+}
+
+enum LicenseStatus {
+  ACTIVE
+  INACTIVE
+  EXPIRED
+  REVOKED
+}
+
+enum SessionStatus {
+  ACTIVE
+  PAUSED
+  COMPLETED
+}
+
+enum WindowStatus {
+  OPEN
+  CLOSED
+}
+
+enum TestCategory {
+  REQUIRED
+  BOUNDARY
+  NEGATIVE
+  FORMAT
+  SECURITY
+  ACCESSIBILITY
+}
+
+enum TestPriority {
+  CRITICAL
+  HIGH
+  MEDIUM
+  LOW
+}
+
+enum TestStatus {
+  PENDING
+  PASSED
+  FAILED
+  SKIPPED
+}
+
