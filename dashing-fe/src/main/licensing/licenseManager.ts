@@ -9,14 +9,15 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
 import * as crypto from 'crypto';
-import { 
-  Feature, 
-  LicenseTier, 
-  TIER_FEATURES, 
-  TierLimits, 
+import {
+  Feature,
+  LicenseTier,
+  TIER_FEATURES,
+  TierLimits,
   TIER_LIMITS,
-  isFeatureAvailableForTier 
+  isFeatureAvailableForTier
 } from './features';
+import { LICENSING_ENABLED } from '../../shared/config';
 
 // License data structure
 export interface License {
@@ -201,6 +202,8 @@ class LicenseManager {
    * Check if a specific feature is enabled
    */
   isFeatureEnabled(feature: Feature): boolean {
+    // Licensing temporarily disabled: all features are enabled by default.
+    if (!LICENSING_ENABLED) return true;
     const tier = this.getCurrentTier();
     return isFeatureAvailableForTier(feature, tier);
   }
@@ -209,6 +212,9 @@ class LicenseManager {
    * Get the current license tier
    */
   getCurrentTier(): LicenseTier {
+    // Licensing temporarily disabled: treat everyone as the highest tier so
+    // limits are generous and all features are unlocked.
+    if (!LICENSING_ENABLED) return 'enterprise';
     if (!this.license) return 'free';
     
     // Check if license has expired
@@ -233,6 +239,16 @@ class LicenseManager {
    * Get license status for UI display
    */
   getStatus(): LicenseStatus {
+    // Licensing temporarily disabled: report an unlocked enterprise status.
+    if (!LICENSING_ENABLED) {
+      return {
+        isLicensed: true,
+        tier: 'enterprise',
+        needsRevalidation: false,
+        isInGracePeriod: false,
+      };
+    }
+
     if (!this.license) {
       return {
         isLicensed: false,

@@ -4,13 +4,25 @@
  */
 
 import './dashboard.css';
-import { 
-  Session, 
-  SessionWindow, 
-  SessionEvent, 
+import {
+  Session,
+  SessionWindow,
+  SessionEvent,
   CreateSessionRequest,
   RecordedAction,
 } from '../shared/types';
+import { LICENSING_ENABLED } from '../shared/config';
+import {
+  TestCasePrompt,
+  DEFAULT_PROMPT,
+  DEFAULT_PROMPT_ID,
+  MAX_USER_PROMPTS,
+  withDefaultPrompt,
+  addPrompt as addPromptToList,
+  updatePrompt as updatePromptInList,
+  deletePrompt as deletePromptFromList,
+  getInstructionsById,
+} from '../shared/testCasePrompts';
 
 // Extend window interface for electron API
 interface TabError {
@@ -391,6 +403,7 @@ declare global {
         language?: string;
         selectedActionIds: string[];
         existingCode?: string;
+        customInstructions?: string;
       }) => Promise<{ success: boolean; jobId?: string; error?: string }>;
       aiGetJobs: (filters?: {
         sessionId?: string;
@@ -486,7 +499,10 @@ class DashboardApp {
     apiUrl: '',
     autoSync: false,
   };
-  
+
+  // Test case generation prompts (default + up to MAX_USER_PROMPTS user prompts)
+  private testCasePrompts: TestCasePrompt[] = [DEFAULT_PROMPT];
+
   constructor() {
     this.init();
   }
@@ -500,7 +516,11 @@ class DashboardApp {
     
     // Load settings from localStorage
     this.loadSettings();
-    
+    this.loadTestCasePrompts();
+
+    // Hide licensing/sync UI while the feature is disabled
+    this.applyLicensingVisibility();
+
     // Sync settings to main process
     await this.syncSettingsToMainProcess();
     
@@ -517,6 +537,7 @@ class DashboardApp {
     this.setupTestCasesListeners();
     this.setupSessionRulesListeners();
     this.setupAIIntegrationsListeners();
+    this.setupPromptsListeners();
     
     // Load initial data
     await this.loadActiveSessions();
@@ -659,7 +680,8 @@ class DashboardApp {
       'session-limits': 'Session Limits',
       'data-management': 'Data Management',
       'session-rules': 'Session Rules',
-      'integrations': 'Integrations'
+      'integrations': 'Integrations',
+      'prompts': 'Prompts'
     };
     
     // Navigate to a settings section
@@ -694,10 +716,196 @@ class DashboardApp {
     });
   }
   
+  /**
+   * Hide licensing & cloud-sync UI while the feature is temporarily disabled.
+   * Everything remains in the DOM/code so it can be re-enabled by flipping
+   * LICENSING_ENABLED in shared/config.ts.
+   */
+  private applyLicensingVisibility(): void {
+    if (LICENSING_ENABLED) return;
+
+    const hide = (el: Element | null) => el?.classList.add('hidden');
+
+    // Settings: License & Sync nav card + its subview content
+    hide(document.querySelector('.settings-nav-card[data-settings-section="license-sync"]'));
+    hide(document.getElementById('section-license-sync'));
+
+    // History: "Sync All" button
+    hide(document.getElementById('sync-all-btn'));
+
+    // Any remaining "PRO" tags
+    document.querySelectorAll('.nav-badge-pro, .pro-badge').forEach(el => el.classList.add('hidden'));
+  }
+
+  // ============================================
+  // Test Case Generation Prompts
+  // ============================================
+
+  private loadTestCasePrompts(): void {
+    try {
+      const saved = localStorage.getItem('dashing-tc-prompts');
+      const parsed: TestCasePrompt[] = saved ? JSON.parse(saved) : [];
+      // Always re-derive the list so the default prompt is present and current
+      this.testCasePrompts = withDefaultPrompt(parsed);
+    } catch (error) {
+      console.error('Failed to load test case prompts:', error);
+      this.testCasePrompts = withDefaultPrompt([]);
+    }
+  }
+
+  private saveTestCasePrompts(): void {
+    // Only persist user prompts; the default is always re-injected on load
+    const userPrompts = this.testCasePrompts.filter(p => !p.isDefault);
+    localStorage.setItem('dashing-tc-prompts', JSON.stringify(userPrompts));
+  }
+
+  private newPromptId(): string {
+    return `prompt-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  }
+
+  private setupPromptsListeners(): void {
+    const addBtn = document.getElementById('add-prompt-btn');
+    addBtn?.addEventListener('click', () => this.openPromptForm());
+
+    const cancelBtn = document.getElementById('prompt-cancel-btn');
+    cancelBtn?.addEventListener('click', () => this.closePromptForm());
+
+    const saveBtn = document.getElementById('prompt-save-btn');
+    saveBtn?.addEventListener('click', () => this.handleSavePrompt());
+
+    // Render the initial list
+    this.renderPromptsList();
+  }
+
+  private renderPromptsList(): void {
+    const list = document.getElementById('prompts-list');
+    const maxCountEl = document.getElementById('prompts-max-count');
+    const countNote = document.getElementById('prompts-count-note');
+    const addBtn = document.getElementById('add-prompt-btn') as HTMLButtonElement | null;
+    if (maxCountEl) maxCountEl.textContent = String(MAX_USER_PROMPTS);
+    if (!list) return;
+
+    list.innerHTML = this.testCasePrompts.map(p => `
+      <div class="prompt-card" data-prompt-id="${p.id}">
+        <div class="prompt-card-main">
+          <div class="prompt-card-header">
+            <span class="prompt-card-name">${this.escapeHtml(p.name)}</span>
+            ${p.isDefault ? '<span class="prompt-default-badge">Default</span>' : ''}
+          </div>
+          <p class="prompt-card-instructions">${this.escapeHtml(p.instructions)}</p>
+        </div>
+        <div class="prompt-card-actions">
+          ${p.isDefault
+            ? `<button class="btn btn-sm btn-ghost prompt-view-btn" data-prompt-id="${p.id}">View</button>`
+            : `<button class="btn btn-sm btn-ghost prompt-edit-btn" data-prompt-id="${p.id}">Edit</button>
+               <button class="btn btn-sm btn-ghost prompt-delete-btn" data-prompt-id="${p.id}">Delete</button>`}
+        </div>
+      </div>
+    `).join('');
+
+    // Wire per-card buttons
+    list.querySelectorAll('.prompt-edit-btn, .prompt-view-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = (btn as HTMLElement).dataset.promptId;
+        if (id) this.openPromptForm(id);
+      });
+    });
+    list.querySelectorAll('.prompt-delete-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = (btn as HTMLElement).dataset.promptId;
+        if (id) this.handleDeletePrompt(id);
+      });
+    });
+
+    // Update count note + add button state
+    const userCount = this.testCasePrompts.filter(p => !p.isDefault).length;
+    if (countNote) countNote.textContent = `${userCount} of ${MAX_USER_PROMPTS} custom prompts used`;
+    if (addBtn) addBtn.disabled = userCount >= MAX_USER_PROMPTS;
+  }
+
+  private openPromptForm(id?: string): void {
+    const form = document.getElementById('prompt-form');
+    const idInput = document.getElementById('prompt-edit-id') as HTMLInputElement;
+    const nameInput = document.getElementById('prompt-name-input') as HTMLInputElement;
+    const instructionsInput = document.getElementById('prompt-instructions-input') as HTMLTextAreaElement;
+    const errorEl = document.getElementById('prompt-form-error');
+    const saveBtn = document.getElementById('prompt-save-btn') as HTMLButtonElement;
+    const nameGroup = nameInput?.closest('.form-group');
+    if (!form || !idInput || !nameInput || !instructionsInput) return;
+
+    errorEl?.classList.add('hidden');
+    const existing = id ? this.testCasePrompts.find(p => p.id === id) : undefined;
+    const readOnly = !!existing?.isDefault;
+
+    idInput.value = existing && !existing.isDefault ? existing.id : '';
+    nameInput.value = existing ? existing.name : '';
+    instructionsInput.value = existing ? existing.instructions : '';
+
+    // The default prompt is view-only
+    nameInput.readOnly = readOnly;
+    instructionsInput.readOnly = readOnly;
+    if (saveBtn) saveBtn.classList.toggle('hidden', readOnly);
+    // Hide the name field for the default (its name is fixed)
+    (nameGroup as HTMLElement | null)?.classList.toggle('hidden', readOnly);
+
+    form.classList.remove('hidden');
+    if (!readOnly) nameInput.focus();
+  }
+
+  private closePromptForm(): void {
+    const form = document.getElementById('prompt-form');
+    const errorEl = document.getElementById('prompt-form-error');
+    form?.classList.add('hidden');
+    errorEl?.classList.add('hidden');
+  }
+
+  private handleSavePrompt(): void {
+    const idInput = document.getElementById('prompt-edit-id') as HTMLInputElement;
+    const nameInput = document.getElementById('prompt-name-input') as HTMLInputElement;
+    const instructionsInput = document.getElementById('prompt-instructions-input') as HTMLTextAreaElement;
+    const errorEl = document.getElementById('prompt-form-error');
+    if (!idInput || !nameInput || !instructionsInput) return;
+
+    const input = { name: nameInput.value, instructions: instructionsInput.value };
+    const result = idInput.value
+      ? updatePromptInList(this.testCasePrompts, idInput.value, input)
+      : addPromptToList(this.testCasePrompts, input, () => this.newPromptId());
+
+    if (result.error) {
+      if (errorEl) {
+        errorEl.textContent = result.error;
+        errorEl.classList.remove('hidden');
+      }
+      return;
+    }
+
+    this.testCasePrompts = result.prompts;
+    this.saveTestCasePrompts();
+    this.renderPromptsList();
+    this.closePromptForm();
+    this.showToast('Prompt saved', 'info');
+  }
+
+  private handleDeletePrompt(id: string): void {
+    const target = this.testCasePrompts.find(p => p.id === id);
+    if (!target || target.isDefault) return;
+    if (!confirm(`Delete the prompt "${target.name}"?`)) return;
+
+    const result = deletePromptFromList(this.testCasePrompts, id);
+    if (result.error) {
+      this.showToast(result.error, 'error');
+      return;
+    }
+    this.testCasePrompts = result.prompts;
+    this.saveTestCasePrompts();
+    this.renderPromptsList();
+    this.showToast('Prompt deleted', 'info');
+  }
+
   // ============================================
   // License Management
   // ============================================
-  
+
   private async loadLicenseStatus(): Promise<void> {
     try {
       this.licenseStatus = await window.dashboardAPI.getLicenseStatus();
@@ -4867,6 +5075,15 @@ class DashboardApp {
     if (codeOptions) {
       codeOptions.classList.toggle('hidden', mode === 'cases');
     }
+
+    // Show prompt selection only for test case generation
+    const promptSelection = document.getElementById('ai-prompt-selection');
+    if (promptSelection) {
+      promptSelection.classList.toggle('hidden', mode !== 'cases');
+    }
+    if (mode === 'cases') {
+      this.populatePromptDropdown();
+    }
     
     // Reset UI state
     this.resetAIModalState();
@@ -4947,12 +5164,21 @@ class DashboardApp {
       // Use selectedModel as fallback
       modelSelect.innerHTML = `<option value="${provider.selectedModel}">${provider.selectedModel}</option>`;
     } else {
-      modelSelect.innerHTML = models.map(m => 
+      modelSelect.innerHTML = models.map(m =>
         `<option value="${m.id}" ${m.id === provider.selectedModel ? 'selected' : ''}>${m.name}</option>`
       ).join('');
     }
   }
-  
+
+  private populatePromptDropdown(): void {
+    const promptSelect = document.getElementById('ai-gen-prompt') as HTMLSelectElement;
+    if (!promptSelect) return;
+    promptSelect.innerHTML = this.testCasePrompts.map(p =>
+      `<option value="${p.id}">${this.escapeHtml(p.name)}</option>`
+    ).join('');
+    promptSelect.value = DEFAULT_PROMPT_ID;
+  }
+
   private resetAIModalState(): void {
     // Reset checkbox
     const consentCheckbox = document.getElementById('ai-consent-checkbox') as HTMLInputElement;
@@ -5223,7 +5449,14 @@ class DashboardApp {
     if (this.aiCurrentMode === 'code') {
       jobType = (codeMode?.value as 'code-new' | 'code-optimize') || 'code-new';
     }
-    
+
+    // Resolve the chosen test-case prompt's instructions (test-cases mode only)
+    let customInstructions: string | undefined;
+    if (jobType === 'test-cases') {
+      const promptSelect = document.getElementById('ai-gen-prompt') as HTMLSelectElement;
+      customInstructions = getInstructionsById(this.testCasePrompts, promptSelect?.value);
+    }
+
     try {
       console.log('[Dashboard] Creating AI job...');
       // Create the job
@@ -5236,6 +5469,7 @@ class DashboardApp {
         framework: framework?.value,
         language: language?.value,
         selectedActionIds: Array.from(this.aiSelectedActionIds),
+        customInstructions,
       });
       
       console.log('[Dashboard] AI job result:', result);

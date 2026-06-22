@@ -21,6 +21,8 @@ export interface CreateJobOptions {
   language?: string;
   selectedActionIds: string[];
   existingCode?: string;
+  /** Custom system instructions for test-case generation (persona only). */
+  customInstructions?: string;
 }
 
 export interface JobStatusEvent {
@@ -84,6 +86,7 @@ class AIJobProcessor extends EventEmitter {
         language: options.language,
         selectedActionIds: options.selectedActionIds,
         existingCode: options.existingCode,
+        customInstructions: options.customInstructions,
       },
     });
 
@@ -252,6 +255,7 @@ class AIJobProcessor extends EventEmitter {
       framework: job.options.framework as 'playwright' | 'cypress' | undefined,
       language: job.options.language as 'typescript' | 'javascript' | undefined,
       existingCode: job.options.existingCode,
+      customInstructions: job.options.customInstructions,
       testName: job.sessionName,
       // Pass progress callback for batch updates
       onProgress: async (progress: { completedBatches: number; totalBatches: number }) => {

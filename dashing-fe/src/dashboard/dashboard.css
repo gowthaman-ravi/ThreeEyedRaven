@@ -3511,6 +3511,128 @@ body {
   line-height: 1.5;
 }
 
+/* ============================================
+   Test Case Generation Prompts
+   ============================================ */
+
+.prompts-icon svg {
+  color: var(--accent-secondary);
+}
+
+.settings-nav-card:hover .prompts-icon svg {
+  color: var(--accent-primary);
+}
+
+.prompts-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.prompt-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 16px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+}
+
+.prompt-card-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.prompt-card-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.prompt-card-name {
+  font-weight: 600;
+  color: var(--text-primary);
+  font-size: 14px;
+}
+
+.prompt-default-badge {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: 999px;
+  color: var(--accent-primary);
+  background: rgba(0, 255, 213, 0.12);
+  border: 1px solid var(--border-accent);
+}
+
+.prompt-card-instructions {
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.5;
+  margin: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  white-space: pre-wrap;
+}
+
+.prompt-card-actions {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.prompts-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.prompts-count-note {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.prompt-form {
+  padding: 16px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+}
+
+.prompt-form textarea.setting-input {
+  width: 100%;
+  resize: vertical;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.prompt-form-error {
+  color: var(--accent-error);
+  font-size: 12px;
+  margin: 8px 0;
+}
+
+.prompt-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+/* Prompt selection in the AI generation modal */
+.ai-prompt-selection {
+  margin-bottom: 16px;
+}
+
 /* AI Providers List */
 .ai-providers-list {
   display: flex;

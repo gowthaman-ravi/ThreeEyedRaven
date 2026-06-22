@@ -1262,6 +1262,7 @@ class SessionApp {
             selectedText: selectedText || null,
             isEditable: isEditable,
             tagName: e.target.tagName?.toLowerCase() || '',
+            shiftKey: e.shiftKey === true,
           };
           
           // Also send position via console for backup
@@ -1282,26 +1283,18 @@ class SessionApp {
         window.addEventListener('message', (event) => {
           if (event.data && event.data.type === 'dashing-add-expected') {
             if (lastRightClickedElementInfo) {
-              // Determine assertion type based on element
               const el = lastRightClickedElement;
-              let assertionType = 'visible';
-              let expectedText = lastRightClickedElementInfo.text || '';
-              let expectedValue = lastRightClickedElementInfo.value || '';
-              
-              if (el) {
-                if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
-                  assertionType = 'hasValue';
-                  expectedValue = el.value || '';
-                } else if (el.tagName === 'SELECT') {
-                  assertionType = 'hasValue';
-                  expectedValue = el.value || '';
-                } else if (el.type === 'checkbox' || el.type === 'radio') {
-                  assertionType = el.checked ? 'checked' : 'visible';
-                } else if (expectedText.trim()) {
-                  assertionType = 'hasText';
-                }
+              // The user explicitly picks the assertion type from the menu.
+              const assertionType = event.data.assertionType || 'visible';
+              let expectedText = '';
+              let expectedValue = '';
+
+              if (assertionType === 'hasText') {
+                expectedText = (lastRightClickedElementInfo.text || '').trim();
+              } else if (assertionType === 'hasValue') {
+                expectedValue = (el && el.value) || lastRightClickedElementInfo.value || '';
               }
-              
+
               // Send the expected assertion action
               console.log(JSON.stringify({
                 type: 'dashing-action',
@@ -1342,12 +1335,13 @@ class SessionApp {
       // Synchronously fetch the last right-click position and context from the webview
       // This is more reliable than waiting for console messages
       let webviewPosition: { x: number; y: number } | null = null;
-      let webviewContext: { 
-        linkURL: string | null; 
-        imageSrc: string | null; 
+      let webviewContext: {
+        linkURL: string | null;
+        imageSrc: string | null;
         selectedText: string | null;
         isEditable: boolean;
         tagName: string;
+        shiftKey?: boolean;
       } | null = null;
       
       try {
@@ -1384,142 +1378,126 @@ class SessionApp {
         y = webviewRect.top + (params?.y || 0);
       }
       
-      // Build context menu items based on what was clicked
-      const menuItems: Array<{ label: string; action: () => void; shortcut?: string; disabled?: boolean; separator?: boolean }> = [];
-      
-      // Add "Add as Expected" option when recording
-      if (this.sessionStatus === 'recording') {
-        menuItems.push({
-          label: '✓ Add as Expected',
-          action: () => {
-            webview.executeJavaScript(`
-              window.postMessage({ type: 'dashing-add-expected' }, '*');
-            `);
-          },
-        });
-        menuItems.push({ label: '', action: () => { /* separator */ }, separator: true });
-      }
-      
-      // Link options - check both Electron params and webview context
-      const linkURL = params?.linkURL || webviewContext?.linkURL;
-      if (linkURL) {
-        menuItems.push({
-          label: 'Open Link in New Tab',
-          action: () => this.createTab(linkURL),
-        });
-        menuItems.push({
-          label: 'Copy Link Address',
-          action: () => {
-            navigator.clipboard.writeText(linkURL);
-          },
-        });
-        menuItems.push({ label: '', action: () => { /* separator */ }, separator: true });
-      }
-      
-      // Image options - check both Electron params and webview context
-      const imageSrc = (params?.mediaType === 'image' && params?.srcURL) ? params.srcURL : webviewContext?.imageSrc;
-      if (imageSrc) {
-        menuItems.push({
-          label: 'Open Image in New Tab',
-          action: () => this.createTab(imageSrc),
-        });
-        menuItems.push({
-          label: 'Copy Image Address',
-          action: () => {
-            navigator.clipboard.writeText(imageSrc);
-          },
-        });
-        menuItems.push({ label: '', action: () => { /* separator */ }, separator: true });
-      }
-      
-      // Selection options - check both Electron params and webview context
-      const selectionText = params?.selectionText || webviewContext?.selectedText;
-      if (selectionText) {
-        menuItems.push({
-          label: 'Copy',
-          action: () => webview.copy(),
-          shortcut: '⌘C',
-        });
-        menuItems.push({
-          label: `Search Google for "${selectionText.slice(0, 30)}${selectionText.length > 30 ? '...' : ''}"`,
-          action: () => {
-            const query = encodeURIComponent(selectionText);
-            this.createTab(`https://www.google.com/search?q=${query}`);
-          },
-        });
-        menuItems.push({ label: '', action: () => { /* separator */ }, separator: true });
-      }
-      
-      // Editable field options - check both Electron params and webview context
-      const isEditable = params?.isEditable || webviewContext?.isEditable;
-      if (isEditable) {
-        menuItems.push({
-          label: 'Undo',
-          action: () => webview.undo(),
-          shortcut: '⌘Z',
-        });
-        menuItems.push({
-          label: 'Redo',
-          action: () => webview.redo(),
-          shortcut: '⇧⌘Z',
-        });
-        menuItems.push({ label: '', action: () => { /* separator */ }, separator: true });
-        menuItems.push({
-          label: 'Cut',
-          action: () => webview.cut(),
-          shortcut: '⌘X',
-        });
-        menuItems.push({
-          label: 'Copy',
-          action: () => webview.copy(),
-          shortcut: '⌘C',
-        });
-        menuItems.push({
-          label: 'Paste',
-          action: () => webview.paste(),
-          shortcut: '⌘V',
-        });
-        menuItems.push({
-          label: 'Select All',
-          action: () => webview.selectAll(),
-          shortcut: '⌘A',
-        });
-        menuItems.push({ label: '', action: () => { /* separator */ }, separator: true });
-      }
-      
-      // Navigation options (always show)
-      menuItems.push({
-        label: 'Back',
-        action: () => webview.goBack(),
-        disabled: !webview.canGoBack(),
-      });
-      menuItems.push({
-        label: 'Forward',
-        action: () => webview.goForward(),
-        disabled: !webview.canGoForward(),
-      });
-      menuItems.push({
-        label: 'Reload',
-        action: () => webview.reload(),
-        shortcut: '⌘R',
-      });
-      menuItems.push({ label: '', action: () => { /* separator */ }, separator: true });
-      
-      // Page actions
-      menuItems.push({
-        label: 'View Page Source',
-        action: () => {
-          const currentUrl = webview.getURL();
-          this.createTab(`view-source:${currentUrl}`);
-        },
-      });
-      menuItems.push({
-        label: 'Inspect Element',
-        action: () => webview.inspectElement(params?.x || 0, params?.y || 0),
-      });
-      
+      // Route the menu:
+      //  - Shift + right-click  -> regular Chrome/browser options
+      //  - Normal right-click while recording -> QA "Expect" options
+      //  - Otherwise (not recording) -> browser options (nothing QA to show)
+      const shiftHeld = webviewContext?.shiftKey === true;
+      const showBrowserMenu = shiftHeld || this.sessionStatus !== 'recording';
+
+      const menuItems = showBrowserMenu
+        ? this.buildBrowserContextMenuItems(webview, params, webviewContext)
+        : this.buildExpectContextMenuItems(webview);
+
       this.showContextMenu(menuItems, x, y);
     });
+  }
+
+  /**
+   * QA menu shown on a normal right-click while recording: the explicit
+   * "Expect" assertions. Browser actions (copy/paste/inspect/...) intentionally
+   * live under Shift + right-click instead.
+   */
+  private buildExpectContextMenuItems(
+    webview: Electron.WebviewTag,
+  ): Array<{ label: string; action: () => void; shortcut?: string; disabled?: boolean; separator?: boolean }> {
+    const addExpected = (assertionType: string) => () => {
+      webview.executeJavaScript(
+        `window.postMessage({ type: 'dashing-add-expected', assertionType: '${assertionType}' }, '*');`
+      );
+    };
+
+    return [
+      { label: '✓ Expect to be Visible', action: addExpected('visible') },
+      { label: '✓ Expect to Contain Text', action: addExpected('hasText') },
+      { label: '✓ Expect to be Disabled', action: addExpected('disabled') },
+      { label: '✓ Expect to be Enabled', action: addExpected('enabled') },
+      { label: '', action: () => { /* separator */ }, separator: true },
+      { label: 'Shift + Right-click for browser options', action: () => { /* hint */ }, disabled: true },
+    ];
+  }
+
+  /**
+   * Regular Chrome/browser options, shown on Shift + right-click (or when not
+   * recording). Rendered in the same styled overlay as the QA menu.
+   */
+  private buildBrowserContextMenuItems(
+    webview: Electron.WebviewTag,
+    params: Electron.ContextMenuParams | undefined,
+    webviewContext: {
+      linkURL: string | null;
+      imageSrc: string | null;
+      selectedText: string | null;
+      isEditable: boolean;
+      tagName: string;
+      shiftKey?: boolean;
+    } | null,
+  ): Array<{ label: string; action: () => void; shortcut?: string; disabled?: boolean; separator?: boolean }> {
+    const menuItems: Array<{ label: string; action: () => void; shortcut?: string; disabled?: boolean; separator?: boolean }> = [];
+
+    // Link options
+    const linkURL = params?.linkURL || webviewContext?.linkURL;
+    if (linkURL) {
+      menuItems.push({ label: 'Open Link in New Tab', action: () => this.createTab(linkURL) });
+      menuItems.push({ label: 'Copy Link Address', action: () => { navigator.clipboard.writeText(linkURL); } });
+      menuItems.push({ label: '', action: () => { /* separator */ }, separator: true });
+    }
+
+    // Image options
+    const imageSrc = (params?.mediaType === 'image' && params?.srcURL) ? params.srcURL : webviewContext?.imageSrc;
+    if (imageSrc) {
+      menuItems.push({ label: 'Open Image in New Tab', action: () => this.createTab(imageSrc) });
+      menuItems.push({ label: 'Copy Image Address', action: () => { navigator.clipboard.writeText(imageSrc); } });
+      menuItems.push({ label: '', action: () => { /* separator */ }, separator: true });
+    }
+
+    // Selection options
+    const selectionText = params?.selectionText || webviewContext?.selectedText;
+    if (selectionText) {
+      menuItems.push({ label: 'Copy', action: () => webview.copy(), shortcut: '⌘C' });
+      menuItems.push({
+        label: `Search Google for "${selectionText.slice(0, 30)}${selectionText.length > 30 ? '...' : ''}"`,
+        action: () => {
+          const query = encodeURIComponent(selectionText);
+          this.createTab(`https://www.google.com/search?q=${query}`);
+        },
+      });
+      menuItems.push({ label: '', action: () => { /* separator */ }, separator: true });
+    }
+
+    // Editable field options
+    const isEditable = params?.isEditable || webviewContext?.isEditable;
+    if (isEditable) {
+      menuItems.push({ label: 'Undo', action: () => webview.undo(), shortcut: '⌘Z' });
+      menuItems.push({ label: 'Redo', action: () => webview.redo(), shortcut: '⇧⌘Z' });
+      menuItems.push({ label: '', action: () => { /* separator */ }, separator: true });
+      menuItems.push({ label: 'Cut', action: () => webview.cut(), shortcut: '⌘X' });
+      menuItems.push({ label: 'Copy', action: () => webview.copy(), shortcut: '⌘C' });
+      menuItems.push({ label: 'Paste', action: () => webview.paste(), shortcut: '⌘V' });
+      menuItems.push({ label: 'Select All', action: () => webview.selectAll(), shortcut: '⌘A' });
+      menuItems.push({ label: '', action: () => { /* separator */ }, separator: true });
+    }
+
+    // Navigation options
+    menuItems.push({ label: 'Back', action: () => webview.goBack(), disabled: !webview.canGoBack() });
+    menuItems.push({ label: 'Forward', action: () => webview.goForward(), disabled: !webview.canGoForward() });
+    menuItems.push({ label: 'Reload', action: () => webview.reload(), shortcut: '⌘R' });
+    menuItems.push({ label: '', action: () => { /* separator */ }, separator: true });
+
+    // Page actions
+    menuItems.push({
+      label: 'View Page Source',
+      action: () => {
+        const currentUrl = webview.getURL();
+        this.createTab(`view-source:${currentUrl}`);
+      },
+    });
+    menuItems.push({
+      label: 'Inspect Element',
+      action: () => webview.inspectElement(params?.x || 0, params?.y || 0),
+    });
+
+    return menuItems;
   }
   
   // ============================================

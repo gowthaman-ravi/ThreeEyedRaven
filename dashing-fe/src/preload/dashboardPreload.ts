@@ -808,6 +808,7 @@ contextBridge.exposeInMainWorld('dashboardAPI', {
     language?: string;
     selectedActionIds: string[];
     existingCode?: string;
+    customInstructions?: string;
   }): Promise<{ success: boolean; jobId?: string; error?: string }> => {
     return ipcRenderer.invoke('ai-job-create', options);
   },

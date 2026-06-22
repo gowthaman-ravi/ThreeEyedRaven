@@ -14,6 +14,8 @@ import { getAICompletionService } from './aiCompletion';
 import {
   TEST_CASE_PLAN_PROMPT,
   TEST_CASE_DETAIL_PROMPT,
+  buildPlanSystemPrompt,
+  buildDetailSystemPrompt,
   buildTestCaseContext,
   parseTestCaseResponse,
   parseTestCasePlanResponse,
@@ -45,6 +47,8 @@ export interface AIGenerationOptions {
   language?: Language;
   existingCode?: string;
   testName?: string;
+  /** Custom system instructions for test-case generation (persona only). */
+  customInstructions?: string;
   onProgress?: (progress: { completedBatches: number; totalBatches: number }) => Promise<void>;
 }
 
@@ -176,7 +180,11 @@ class AIGenerator {
       const completionService = getAICompletionService();
       const simplifiedActions = this.simplifyActionsForPrompt(maskedActions);
       const actionsJson = JSON.stringify(simplifiedActions, null, 2);
-      
+
+      // Build system prompts from the chosen instructions (falls back to default)
+      const planSystemPrompt = buildPlanSystemPrompt(options.customInstructions);
+      const detailSystemPrompt = buildDetailSystemPrompt(options.customInstructions);
+
       let totalTokensUsed = 0;
       let totalInputTokens = 0;
       let totalOutputTokens = 0;
@@ -184,7 +192,7 @@ class AIGenerator {
       // Save prompt and actions for debugging
       const savedFiles = savePromptAndActions(
         'test-cases',
-        TEST_CASE_PLAN_PROMPT.system,
+        planSystemPrompt,
         TEST_CASE_PLAN_PROMPT.userTemplate(actionsJson, context),
         simplifiedActions
       );
@@ -198,7 +206,7 @@ class AIGenerator {
       const planPrompt = TEST_CASE_PLAN_PROMPT.userTemplate(actionsJson, context);
       const planResponse = await completionService.completeWithFallback({
         prompt: planPrompt,
-        systemPrompt: TEST_CASE_PLAN_PROMPT.system,
+        systemPrompt: planSystemPrompt,
         temperature: 0.7,
       });
       totalTokensUsed += planResponse.tokensUsed || 0;
@@ -249,7 +257,7 @@ class AIGenerator {
         const detailPrompt = TEST_CASE_DETAIL_PROMPT.userTemplate(actionsJson, context, chunks[i]);
         const detailResponse = await completionService.completeWithFallback({
           prompt: detailPrompt,
-          systemPrompt: TEST_CASE_DETAIL_PROMPT.system,
+          systemPrompt: detailSystemPrompt,
           temperature: 0.7,
           stream: true,
           onChunk: (chunk, accumulated) => {
