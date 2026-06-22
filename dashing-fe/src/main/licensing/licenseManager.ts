@@ -1,5 +1,5 @@
 /**
- * License Manager for Dashing
+ * License Manager for ThreeEyedRaven
  * 
  * Handles license key validation, storage, and feature access control.
  * Supports offline grace periods and periodic re-validation.

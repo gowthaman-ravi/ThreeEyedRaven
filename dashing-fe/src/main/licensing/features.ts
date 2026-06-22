@@ -1,5 +1,5 @@
 /**
- * Feature flags and tier definitions for Dashing
+ * Feature flags and tier definitions for ThreeEyedRaven
  * 
  * This module defines all available features and which tiers have access to them.
  * Features are gated based on the user's license tier.

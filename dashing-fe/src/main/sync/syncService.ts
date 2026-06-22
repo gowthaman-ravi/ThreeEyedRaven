@@ -1,5 +1,5 @@
 /**
- * Sync Service for Dashing
+ * Sync Service for ThreeEyedRaven
  * 
  * Handles syncing session data to a remote backend server.
  * Features:

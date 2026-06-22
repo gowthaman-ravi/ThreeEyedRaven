@@ -1,5 +1,5 @@
 /**
- * Dashing Dashboard - Session Management Interface
+ * ThreeEyedRaven Dashboard - Session Management Interface
  * Handles session creation, monitoring, and history
  */
 
@@ -656,7 +656,7 @@ class DashboardApp {
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `dashing-export-${new Date().toISOString().split('T')[0]}.json`;
+        a.download = `threeeyedraven-export-${new Date().toISOString().split('T')[0]}.json`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
@@ -3149,7 +3149,7 @@ class DashboardApp {
     // Retry button
     card.querySelector('[data-action="retry"]')?.addEventListener('click', async (e) => {
       e.stopPropagation();
-      await this.handleRetryJob(job.id);
+      await this.openRetryModal(job);
     });
     
     // View button
@@ -3187,15 +3187,130 @@ class DashboardApp {
     }
   }
   
-  private async handleRetryJob(jobId: string): Promise<void> {
+  private async handleRetryJob(
+    jobId: string,
+    updates?: { providerId?: string; model?: string },
+  ): Promise<void> {
     try {
-      await window.dashboardAPI.aiRetryJob(jobId);
+      await window.dashboardAPI.aiRetryJob(jobId, updates);
       this.showToast('Generation restarted', 'info');
       await this.loadGeneratedProjects();
     } catch (error) {
       console.error('Failed to retry job:', error);
       this.showToast('Failed to restart generation', 'error');
     }
+  }
+
+  // ============================================
+  // Retry Generation Modal (pick provider/model)
+  // ============================================
+
+  private retryJobId: string | null = null;
+  private retryModalListenersSetup = false;
+
+  private async openRetryModal(job: AIJob): Promise<void> {
+    const modal = document.getElementById('ai-retry-modal');
+    if (!modal) {
+      // Fallback: retry as-is if the modal markup is missing
+      await this.handleRetryJob(job.id);
+      return;
+    }
+
+    this.retryJobId = job.id;
+
+    const currentEl = document.getElementById('ai-retry-current');
+    if (currentEl) currentEl.textContent = `${job.providerId} / ${job.model}`;
+
+    const providerSelect = document.getElementById('ai-retry-provider') as HTMLSelectElement;
+    const modelSelect = document.getElementById('ai-retry-model') as HTMLSelectElement;
+    const noProviders = document.getElementById('ai-retry-no-providers');
+    const selection = document.getElementById('ai-retry-selection');
+    const confirmBtn = document.getElementById('ai-retry-confirm-btn') as HTMLButtonElement | null;
+
+    // Load enabled providers
+    try {
+      this.aiEnabledProviders = await window.dashboardAPI.aiGetEnabledProviders();
+    } catch (error) {
+      console.error('Failed to load AI providers for retry:', error);
+      this.aiEnabledProviders = [];
+    }
+
+    if (providerSelect && modelSelect) {
+      if (this.aiEnabledProviders.length === 0) {
+        noProviders?.classList.remove('hidden');
+        selection?.classList.add('hidden');
+        if (confirmBtn) confirmBtn.disabled = true;
+      } else {
+        noProviders?.classList.add('hidden');
+        selection?.classList.remove('hidden');
+        if (confirmBtn) confirmBtn.disabled = false;
+
+        providerSelect.innerHTML = this.aiEnabledProviders
+          .map(p => `<option value="${p.id}">${p.name}</option>`)
+          .join('');
+
+        // Pre-select the job's original provider/model when still available
+        const hasCurrentProvider = this.aiEnabledProviders.some(p => p.id === job.providerId);
+        providerSelect.value = hasCurrentProvider ? job.providerId : this.aiEnabledProviders[0].id;
+        this.updateRetryModelDropdown(providerSelect.value, hasCurrentProvider ? job.model : undefined);
+
+        providerSelect.onchange = () => this.updateRetryModelDropdown(providerSelect.value);
+      }
+    }
+
+    this.setupRetryModalListeners();
+    modal.classList.remove('hidden');
+  }
+
+  private updateRetryModelDropdown(providerId: string, preferredModel?: string): void {
+    const modelSelect = document.getElementById('ai-retry-model') as HTMLSelectElement;
+    if (!modelSelect) return;
+
+    const provider = this.aiEnabledProviders.find(p => p.id === providerId);
+    if (!provider) return;
+
+    const models = provider.cachedModels || [];
+    if (models.length === 0) {
+      modelSelect.innerHTML = `<option value="${provider.selectedModel}">${provider.selectedModel}</option>`;
+    } else {
+      modelSelect.innerHTML = models
+        .map(m => `<option value="${m.id}">${m.name}</option>`)
+        .join('');
+    }
+
+    const target = preferredModel || provider.selectedModel;
+    if (target) modelSelect.value = target;
+  }
+
+  private setupRetryModalListeners(): void {
+    if (this.retryModalListenersSetup) return;
+    this.retryModalListenersSetup = true;
+
+    const modal = document.getElementById('ai-retry-modal');
+    document.getElementById('ai-retry-modal-close')?.addEventListener('click', () => this.closeRetryModal());
+    document.getElementById('ai-retry-cancel-btn')?.addEventListener('click', () => this.closeRetryModal());
+    modal?.querySelector('.modal-backdrop')?.addEventListener('click', () => this.closeRetryModal());
+    document.getElementById('ai-retry-confirm-btn')?.addEventListener('click', () => this.confirmRetry());
+  }
+
+  private closeRetryModal(): void {
+    document.getElementById('ai-retry-modal')?.classList.add('hidden');
+    this.retryJobId = null;
+  }
+
+  private async confirmRetry(): Promise<void> {
+    if (!this.retryJobId) return;
+
+    const providerSelect = document.getElementById('ai-retry-provider') as HTMLSelectElement;
+    const modelSelect = document.getElementById('ai-retry-model') as HTMLSelectElement;
+
+    const updates = providerSelect?.value
+      ? { providerId: providerSelect.value, model: modelSelect?.value }
+      : undefined;
+
+    const jobId = this.retryJobId;
+    this.closeRetryModal();
+    await this.handleRetryJob(jobId, updates);
   }
   
   private async handleDeleteJob(jobId: string): Promise<void> {
@@ -3305,8 +3420,9 @@ class DashboardApp {
     
     retryBtn?.addEventListener('click', async () => {
       if (this.currentErrorJob) {
+        const job = this.currentErrorJob;
         this.closeErrorModal();
-        await this.handleRetryJob(this.currentErrorJob.id);
+        await this.openRetryModal(job);
       }
     });
     

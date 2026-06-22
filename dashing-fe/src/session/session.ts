@@ -1,5 +1,5 @@
 /**
- * Dashing Session Window - Browser Interface
+ * ThreeEyedRaven Session Window - Browser Interface
  * Handles tab management, navigation, and action recording within a session
  */
 
@@ -469,7 +469,7 @@ class SessionApp {
           message.includes('webpack-internal://') ||  // Webpack internal errors
           message.includes('[HMR]') ||  // Hot module replacement
           message.includes('ResizeObserver loop') ||  // Common benign error
-          message.startsWith('[Dashing]') ||  // Our own debug messages
+          message.startsWith('[ThreeEyedRaven]') ||  // Our own debug messages
           message.includes('Electron Security Warning') ||  // Electron security warnings
           message.includes('Electron Deprecation Warning') ||  // Electron deprecation warnings
           message.includes('%cElectron') ||  // Styled Electron messages
@@ -512,8 +512,8 @@ class SessionApp {
     
     const recorderScript = `
       (function() {
-        if (window.__dashingRecorderInitialized) return;
-        window.__dashingRecorderInitialized = true;
+        if (window.__threeEyedRavenRecorderInitialized) return;
+        window.__threeEyedRavenRecorderInitialized = true;
         
         // Deduplication to prevent same action firing twice
         let lastActionKey = '';
@@ -535,7 +535,7 @@ class SessionApp {
           
           // Use console.log for communication since postMessage doesn't reach webview listener
           console.log(JSON.stringify({
-            type: 'dashing-action',
+            type: 'threeeyedraven-action',
             payload: { type, ...data }
           }));
         };
@@ -750,7 +750,7 @@ class SessionApp {
           }
         }, true);
         
-        console.log('[Dashing] Action recorder initialized');
+        console.log('[ThreeEyedRaven] Action recorder initialized');
       })();
     `;
     
@@ -760,27 +760,27 @@ class SessionApp {
     
     // Only add the console-message listener once per tab
     // We use a flag on the webview to prevent duplicate listeners
-    const webviewEl = webview as unknown as { __dashingActionListenerAdded?: boolean };
-    if (!webviewEl.__dashingActionListenerAdded) {
-      webviewEl.__dashingActionListenerAdded = true;
+    const webviewEl = webview as unknown as { __threeEyedRavenActionListenerAdded?: boolean };
+    if (!webviewEl.__threeEyedRavenActionListenerAdded) {
+      webviewEl.__threeEyedRavenActionListenerAdded = true;
       
       // Listen for actions via console-message
       webview.addEventListener('console-message', (e: Event) => {
         const consoleEvent = e as Electron.ConsoleMessageEvent;
         try {
-          if (consoleEvent.message.startsWith('{"type":"dashing-action"')) {
+          if (consoleEvent.message.startsWith('{"type":"threeeyedraven-action"')) {
             const data = JSON.parse(consoleEvent.message);
             this.handleRecordedAction(tab, data.payload);
-          } else if (consoleEvent.message.startsWith('{"type":"dashing-click"')) {
+          } else if (consoleEvent.message.startsWith('{"type":"threeeyedraven-click"')) {
             // Hide context menu when webview is clicked
             this.hideContextMenu();
-          } else if (consoleEvent.message.startsWith('{"type":"dashing-context-position"')) {
+          } else if (consoleEvent.message.startsWith('{"type":"threeeyedraven-context-position"')) {
             // Store the context menu position from webview
             const data = JSON.parse(consoleEvent.message);
             this.lastContextMenuPosition = data.payload;
           }
         } catch {
-          // Not a dashing action message
+          // Not a ThreeEyedRaven action message
         }
       });
     }
@@ -1149,8 +1149,8 @@ class SessionApp {
     // Inject context menu handler script
     const contextMenuScript = `
       (function() {
-        if (window.__dashingContextMenuInitialized) return;
-        window.__dashingContextMenuInitialized = true;
+        if (window.__threeEyedRavenContextMenuInitialized) return;
+        window.__threeEyedRavenContextMenuInitialized = true;
         
         // Store the last right-clicked element
         let lastRightClickedElement = null;
@@ -1208,8 +1208,8 @@ class SessionApp {
         };
         
         // Store right-click context info for synchronous retrieval
-        window.__dashingLastRightClickPos = null;
-        window.__dashingLastRightClickContext = null;
+        window.__threeEyedRavenLastRightClickPos = null;
+        window.__threeEyedRavenLastRightClickContext = null;
         
         // Find the closest link element (anchor with href)
         const findClosestLink = (el) => {
@@ -1244,7 +1244,7 @@ class SessionApp {
           lastRightClickedElementInfo = getElementInfo(e.target);
           
           // Store position on window for synchronous access
-          window.__dashingLastRightClickPos = { x: e.clientX, y: e.clientY };
+          window.__threeEyedRavenLastRightClickPos = { x: e.clientX, y: e.clientY };
           
           // Store additional context info
           const linkURL = findClosestLink(e.target);
@@ -1256,7 +1256,7 @@ class SessionApp {
                             e.target.tagName === 'TEXTAREA' ||
                             e.target.tagName === 'SELECT';
           
-          window.__dashingLastRightClickContext = {
+          window.__threeEyedRavenLastRightClickContext = {
             linkURL: linkURL,
             imageSrc: imageSrc,
             selectedText: selectedText || null,
@@ -1267,7 +1267,7 @@ class SessionApp {
           
           // Also send position via console for backup
           console.log(JSON.stringify({
-            type: 'dashing-context-position',
+            type: 'threeeyedraven-context-position',
             payload: { x: e.clientX, y: e.clientY }
           }));
         }, true);
@@ -1275,13 +1275,13 @@ class SessionApp {
         // Notify parent on any click (to close context menu)
         document.addEventListener('click', () => {
           console.log(JSON.stringify({
-            type: 'dashing-click'
+            type: 'threeeyedraven-click'
           }));
         }, true);
         
         // Handle "Add as Expected" request from main process
         window.addEventListener('message', (event) => {
-          if (event.data && event.data.type === 'dashing-add-expected') {
+          if (event.data && event.data.type === 'threeeyedraven-add-expected') {
             if (lastRightClickedElementInfo) {
               const el = lastRightClickedElement;
               // The user explicitly picks the assertion type from the menu.
@@ -1297,7 +1297,7 @@ class SessionApp {
 
               // Send the expected assertion action
               console.log(JSON.stringify({
-                type: 'dashing-action',
+                type: 'threeeyedraven-action',
                 payload: {
                   type: 'addExpected',
                   element: lastRightClickedElementInfo,
@@ -1312,7 +1312,7 @@ class SessionApp {
           }
         });
         
-        console.log('[Dashing] Context menu handler initialized');
+        console.log('[ThreeEyedRaven] Context menu handler initialized');
       })();
     `;
     
@@ -1348,8 +1348,8 @@ class SessionApp {
         const result = await webview.executeJavaScript(`
           (function() {
             return {
-              position: window.__dashingLastRightClickPos || null,
-              context: window.__dashingLastRightClickContext || null
+              position: window.__threeEyedRavenLastRightClickPos || null,
+              context: window.__threeEyedRavenLastRightClickContext || null
             };
           })();
         `);
@@ -1403,7 +1403,7 @@ class SessionApp {
   ): Array<{ label: string; action: () => void; shortcut?: string; disabled?: boolean; separator?: boolean }> {
     const addExpected = (assertionType: string) => () => {
       webview.executeJavaScript(
-        `window.postMessage({ type: 'dashing-add-expected', assertionType: '${assertionType}' }, '*');`
+        `window.postMessage({ type: 'threeeyedraven-add-expected', assertionType: '${assertionType}' }, '*');`
       );
     };
 

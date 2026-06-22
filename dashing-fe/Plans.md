@@ -57,12 +57,47 @@ Overload the session-window right-click so QA actions and browser actions live i
 - The recording webview already uses a styled HTML overlay menu (not the native menu); both menus are rendered through it. Shift+right-click reuses the overlay with the browser action set.
 - Shift state is captured inside the injected webview `contextmenu` handler (`e.shiftKey`) and read by the host when building the menu (the native webview `context-menu` event can't report modifiers synchronously).
 - Menu routing: shift OR not-recording → browser menu; recording + no shift → the four Expect options (+ a "Shift+Right-click for browser options" hint).
-- The four assertion types are already supported end-to-end by the test generator (`toBeVisible`/`toContainText`/`toBeDisabled`/`toBeEnabled`), so only the session UI + the `dashing-add-expected` message needed changes.
+- The four assertion types are already supported end-to-end by the test generator (`toBeVisible`/`toContainText`/`toBeDisabled`/`toBeEnabled`), so only the session UI + the `threeeyedraven-add-expected` message needed changes.
 
 ### Steps
 1. Capture `shiftKey` in the injected right-click context. → verify: typecheck.
-2. Make `dashing-add-expected` carry an explicit `assertionType`; webview handler uses it. → verify: typecheck.
+2. Make `threeeyedraven-add-expected` carry an explicit `assertionType`; webview handler uses it. → verify: typecheck.
 3. Split the handler into `buildExpectContextMenuItems` + `buildBrowserContextMenuItems` and route by shift/recording. → verify: typecheck + lint.
+
+## Feature: Rename project Dashing → ThreeEyedRaven
+
+Rebrand the Electron app (frontend only).
+
+### Scope (chosen)
+- Branding + safe internals; frontend only; folder names kept.
+
+### What changed
+- User-facing: window titles, logo text, file-header comments, generated-test attribution comments, export/download filenames.
+- Package: `name` → `threeeyedraven`. `productName` is intentionally left as `dashing` so Electron's `userData` folder is unchanged and existing settings/prompts/history/DB keep working (branding is ThreeEyedRaven everywhere the user sees it in-app).
+- Internal (renamed together, session window only): injected window globals `__dashing*` → `__threeEyedRaven*`, console log prefix `[Dashing]` → `[ThreeEyedRaven]`, and IPC/console message tags (`dashing-action`/`-click`/`-context-position`/`-add-expected` → `threeeyedraven-*`).
+
+### Intentionally kept (data / external; renaming would orphan data or break links)
+- localStorage keys: `dashing-settings`, `dashing-ignored-errors`, `dashing-tc-prompts`.
+- App-data dir (`dashing`/`.dashing`), license file location, and license encryption key `dashing-license-v1`.
+- Events DB filename `dashing-events.db`; generated-tests folder `~/dashing-generated` + `.dashing-metadata.json`.
+- Env-var prefixes (`DASHING_LICENSE_API_URL`, `DASHING_SYNC_API_URL`) and external URLs (`dashing.dev`).
+
+## Feature: Retry generation with a different provider/model
+
+When an AI generation job fails (e.g. the current model is busy/rate-limited), let the user retry on a different provider/model.
+
+### Requirements
+- Retrying a failed/cancelled job opens a modal to choose a provider + model before retrying.
+- Defaults to the job's original provider/model; the user can switch to any enabled provider.
+
+### Design decisions
+- The backend already supports `aiRetryJob(jobId, { providerId, model })` and `retryAIJob` applies the override — so this is a frontend-only modal.
+- Both retry entry points (the Generated list card's retry button and the error modal's Retry button) route through the new modal.
+- Provider/model lists reuse `aiGetEnabledProviders()`; if no providers are enabled, the modal shows a hint and disables Retry.
+
+### Steps
+1. Add the Retry modal (HTML + CSS). → verify: renders.
+2. `openRetryModal(job)` populates provider/model (preselecting the job's current ones); `confirmRetry()` calls `aiRetryJob` with the chosen override. → verify: typecheck + lint.
 
 ## Testing
 - Jest + ts-jest configured in `dashing-fe`.

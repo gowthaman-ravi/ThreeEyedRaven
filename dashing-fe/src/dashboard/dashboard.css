@@ -1,5 +1,5 @@
 /**
- * Dashing Dashboard Styles
+ * ThreeEyedRaven Dashboard Styles
  * Cyberpunk/Neon theme for QA Testing Dashboard
  */
 
@@ -3631,6 +3631,24 @@ body {
 /* Prompt selection in the AI generation modal */
 .ai-prompt-selection {
   margin-bottom: 16px;
+}
+
+/* Retry Generation modal */
+.ai-retry-current-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  margin-bottom: 16px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+}
+
+.ai-retry-current-row .ai-error-value {
+  font-family: var(--font-mono);
+  color: var(--text-primary);
 }
 
 /* AI Providers List */

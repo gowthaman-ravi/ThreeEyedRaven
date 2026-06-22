@@ -1,5 +1,5 @@
 /**
- * Shared types for the Dashing QA Testing Tool
+ * Shared types for the ThreeEyedRaven QA Testing Tool
  * Used by both main and renderer processes
  */
 
