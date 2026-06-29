@@ -52,6 +52,7 @@
   "dependencies": {
     "electron-context-menu": "^4.1.1",
     "electron-squirrel-startup": "^1.0.1",
+    "fast-glob": "^3.3.3",
     "jsonrepair": "^3.13.2",
     "jszip": "^3.10.1",
     "sql.js": "^1.14.0"

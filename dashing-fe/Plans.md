@@ -99,6 +99,86 @@ When an AI generation job fails (e.g. the current model is busy/rate-limited), l
 1. Add the Retry modal (HTML + CSS). → verify: renders.
 2. `openRetryModal(job)` populates provider/model (preselecting the job's current ones); `confirmRetry()` calls `aiRetryJob` with the chosen override. → verify: typecheck + lint.
 
+## Feature: POM-Aware Codegen (resolve recordings against an external Playwright POM repo)
+
+Today the codegen pipeline (`main/codegen/*`) derives "pages" from page titles (`PageDetector`) and synthesizes fresh locators (`LocatorBuilder`) into new files (`TemplateEngine` → `FileWriter`). This feature adds a parallel **POM-aware** mode: point ThreeEyedRaven at the user's *existing* external Playwright Page-Object-Model repo and, during codegen, resolve each recorded action to an existing page-object method (page → locator → method), generating a new method only when none matches. Optionally exposed to/consumed from the external repo via an MCP tool surface.
+
+**Status: PLANNING ONLY. No code is to be written until the Open Questions below are resolved and the user approves the build.**
+
+### Goal / success criteria
+- Given a recorded session and a configured external POM repo, produce a Playwright test that calls existing page-object methods wherever they exist, falls back to raw Playwright otherwise, and (optionally) appends new POM methods for unmatched actions.
+- The full pipeline runs **end-to-end with zero LLM calls** (structural mode). Any LLM/embedding use is strictly additive and degrades gracefully.
+- Works with a **local, low-memory LLM** (small context window, single-threaded, no GPU assumed) without quality cliffs — every LLM task is bounded, chunked, and has a deterministic fallback.
+
+### Assumptions (explicit — challenge before building)
+- The external POM repo is **TypeScript Playwright** using a class-per-page convention (matches the app's own stack). Python/other = out of scope for v1.
+- "Match key" is the user's stated chain: identify page → identify locator → check locator usage → find matching function for the action → reuse or build.
+- The app remains the **client/orchestrator**; the external repo is a **read-only source** at match time and a **write target** only in the explicit "build if not present" pass.
+- Recording, storage (`dashing-events.db`), and the `RecordedAction`/`ElementInfo` shapes in `shared/types.ts` stay as-is; this feature consumes them.
+
+### Resolved decisions (locked 2026-06-29)
+1. **MCP shape:** **Embedded-first.** The matcher runs in the app's main process reading the repo directly; the standalone MCP server (Stage E) is deferred until the in-process resolver is proven.
+2. **Write policy for "build if not present":** **Local branch + commit only.** The app commits generated methods to a new local branch (`branchPrefix` from config); the user pushes and opens the PR themselves. Never overwrite existing methods; never auto-push.
+3. **Local LLM runtime:** **Separate OpenAI-compatible server** (Ollama / LM Studio) called over HTTP, reusing the existing provider pattern. In-process (node-llama-cpp) is out of scope. The assist layer remains **optional** and off by default.
+4. **External repo stack:** **TypeScript Playwright POM** — confirmed. Parser and emission templates target TS.
+
+### Cross-cutting principle: local-LLM / low-memory accommodation
+This is a design constraint on **every** phase, not a single phase:
+- **Deterministic-first.** Phases 0–10 use AST parsing, hashing, and static indexes — no model. Stage D (LLM) and the embedding layer are opt-in and never on the critical path.
+- **Three execution modes**, configurable: `structural` (no LLM), `assisted` (small local LLM for bounded sub-decisions), `full` (larger/hosted model). Default `structural`.
+- **Bounded prompts.** Each LLM call makes exactly one decision (intent label / dedup yes-no / method name) over a small chunk — never the whole session. Keeps within tiny context windows.
+- **Constrained output.** JSON-schema/enum-constrained responses parsed with the existing `jsonrepair`; regex/heuristic fallback if parse fails. Small models can't be trusted with free-form structure.
+- **One model call at a time.** Local provider declares `recommendedConcurrency = 1`; model is lazy-loaded when an LLM phase starts and released after, to respect a low RAM budget.
+- **Cache by input hash.** LLM and embedding results are memoized so re-runs and incremental edits avoid recompute.
+- **Embeddings, if used, are small + in-memory.** A small local embedder (e.g. all-MiniLM / bge-small class, tens of MB) with in-memory cosine over a few-hundred-item corpus — no vector DB.
+
+### Architecture overview
+New module `main/pomgen/` beside `main/codegen/`. Reuses `RecordedAction`/`ElementInfo`, `EventStore`, and the AI provider abstraction (`ai/aiService.ts`). External-repo pointer lives in **app settings**; semantic conventions live in a **committed config file inside the external repo** (`.raven-pom.json`).
+
+### Phases
+Each phase is independently shippable and verifiable. Stages A–C deliver a working structural product; D–F are additive.
+
+**Stage A — Foundations (no LLM)**
+
+0. **Config & repo pointer.** Settings field for external repo path + enable toggle; `.raven-pom.json` schema (globs for pages/tests, framework, base-URL→page map, write policy) + loader/validator in `pomgen/config.ts`. → verify: unit tests on parse/validate (valid, missing, malformed). (DONE — `config.ts`; the Settings-page UI for this pointer lands in Phase 16.)
+1. **Repo discovery & file model.** Resolve pointer, apply glob sets, produce a file-level model: page-candidate files vs test files (overlap → treated as page + warning; empty pages → error). True page-object-class vs support detection is deferred to Phase 2 (AST). → verify: unit tests with an in-memory glob (DONE — `discovery.ts`/`io.ts`).
+2. **POM AST parser.** Extract page classes, locator declarations (constructor assignments, property initializers, getters), methods, and the ordered (locator, action) steps per method. Built on the **installed `typescript` compiler API** — chose this over ts-morph/tree-sitter to avoid a new dep and a TS 4.5.4 parse-compat landmine. → verify: unit tests over inline POM fixtures (DONE — `pomParser.ts`).
+3. **Structural index + manifest.** Build `page → locators → methods` and the reverse index `(page, locatorFingerprint, action) → methods[]`; cache keyed by git SHA / file-hash with incremental update. → verify: lookup correctness + cache-invalidation test.
+
+**Stage B — Resolution pipeline (no LLM)**
+
+4. **Element fingerprinting.** Stable fingerprint (role + accessible name + stable attrs) computed at index time (from POM locators) and record time (from `ElementInfo`); used as the match key instead of raw selector strings. → verify: same element across a selector-refactor fixture yields the same fingerprint.
+5. **Page resolution (step 1 of the chain).** Map a recorded action's URL/DOM to a PageObject via guard predicate → base-URL map → DOM fingerprint, in that order. → verify: fixture traces resolve to correct page incl. an SPA same-URL case.
+6. **Single-action resolution (steps 2–4).** `(page, locatorFingerprint, action)` → method or "none". → verify: fixtures for hit and miss.
+7. **Sequence alignment (composite methods).** Greedy longest-run match of consecutive actions to multi-action methods (e.g. `login()` covering fill+fill+click), preferring longest match, falling back to atomics. → verify: fixture where `login()` beats three atomic calls.
+8. **Deterministic emission.** Template-based output: emit resolved method calls; fall back to existing `LocatorBuilder`/`TemplateEngine` for unmatched actions; assemble the test file. → verify: generated file typechecks / matches golden.
+
+**Stage C — Build if not present (deterministic core; LLM optional later)**
+
+9. **Method synthesis.** Template-generate a new POM method for an unmatched action, append-only, in a **separate write pass**, then re-index. → verify: generated method parses and is picked up on re-index.
+10. **Dedup gate.** Before synthesizing, structural + fuzzy check for an existing near-equivalent; surface reuse-vs-create. → verify: near-duplicate is not created.
+
+**Stage D — LLM / local-model layer (all optional, pluggable, degradable)**
+
+11. **Local provider support.** Extend `aiService` provider set (currently openai/anthropic/gemini) with a `local` provider: baseUrl + capability metadata (`maxContextTokens`, `supportsJsonMode`, `recommendedConcurrency`). Lazy load / release. → verify: smoke test against a tiny local model; clean fallback when unavailable.
+12. **Bounded LLM sub-tasks.** Optional assists where structure is ambiguous: intent labeling (Phase 5/7), method naming (Phase 9), dedup tie-break (Phase 10) — each a tiny constrained prompt with deterministic fallback. → verify: runs on a small model; identical structural output when LLM disabled.
+13. **Optional embedding layer.** Small in-memory embedder for semantic dedup + reuse of similar test flows; disabled by default. → verify: opt-in only; measurable recall lift without it required.
+
+**Stage E — MCP integration** (deferred per decision 1; build only after the embedded resolver is proven)
+
+14. **MCP server over the resolver.** Tools: `get_manifest`, `resolve_page`, `query_methods`, `propose_method` — exposed from/next to the external repo. → verify: each tool returns the expected shape (probe in chat first).
+15. **App as MCP client.** Wire the pipeline to call the MCP tools instead of (or alongside) the in-process matcher. → verify: end-to-end over MCP transport.
+
+**Stage F — End-to-end, safety, performance**
+
+16. **End-to-end on a sample POM repo + Settings UI.** Wire the renderer Settings section (external repo path picker + enable toggle, `.raven-pom.json` validation, consuming `PomSettings`/`validatePomSettings`) and run record → POM-aware test end-to-end. → verify: golden e2e + manual Settings check.
+17. **Performance & memory budget.** Index caching, lazy model load, concurrency=1 for local LLM; confirm within a defined low-RAM budget. → verify: benchmark within budget.
+18. **Safety / write policy.** Local branch + commit only: create branch `<branchPrefix>/<session>`, commit new methods, never overwrite existing methods, never auto-push. → verify: tests for branch creation + commit; assert no push and no edits to existing methods.
+
+### Testing notes
+- Each phase ships with Jest unit tests (per project rule: write tests after each feature). Fixtures: a small sample POM repo + recorded-action fixtures under `pomgen/__tests__/fixtures/`.
+- Structural phases (0–10) are fully unit-testable. LLM phases (11–13) test the deterministic fallback path in CI and gate the live-model path behind an env flag.
+
 ## Testing
 - Jest + ts-jest configured in `dashing-fe`.
 - Unit tests: prompt store CRUD/validation; licensing flag behavior.
