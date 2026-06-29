@@ -37,6 +37,7 @@ export interface AIGenerationJob {
     language?: string;
     selectedActionIds: string[];
     existingCode?: string;
+    customInstructions?: string;
   };
   result: unknown | null;
   error: string | null;
@@ -1931,6 +1932,7 @@ export class EventStore {
       language?: string;
       selectedActionIds: string[];
       existingCode?: string;
+      customInstructions?: string;
     };
   }): Promise<void> {
     await this.ensureInitialized();

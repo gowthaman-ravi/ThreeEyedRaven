@@ -1,0 +1,5 @@
+import * as ts from 'typescript';
+it('parses TS source via the compiler API', () => {
+  const sf = ts.createSourceFile('x.ts', 'export class A { m(){ this.b.fill("y"); } }', ts.ScriptTarget.Latest, true);
+  expect(sf.statements.length).toBe(1);
+});

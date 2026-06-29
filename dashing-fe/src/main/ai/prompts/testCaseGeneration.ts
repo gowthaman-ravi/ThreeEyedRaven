@@ -9,6 +9,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { app } from 'electron';
 import { jsonrepair } from 'jsonrepair';
+import { DEFAULT_TC_INSTRUCTIONS } from '../../../shared/testCasePrompts';
 
 // Store the last saved debug file path for error reporting
 let lastDebugFilePath = '';
@@ -382,3 +383,44 @@ Return a JSON array with this exact structure:
 
 Only return the JSON array, no additional text.`,
 };
+
+// ============================================
+// Custom-instruction system prompt builders
+// ============================================
+//
+// The user can customize the *instructions* (persona/guidance) only. The
+// structural directives below are fixed so the two-pass JSON output stays
+// parseable regardless of the custom instructions.
+
+const PLAN_STRUCTURAL_DIRECTIVE = `You are ONLY listing test case names and priorities — do NOT write descriptions, steps, or expected results yet.
+
+Output a JSON array of objects with only "name" and "priority" fields.`;
+
+const DETAIL_STRUCTURAL_DIRECTIVE = `You have already identified a set of test cases to write. Now write the FULL details for specific test cases from that list.
+
+For each test case, provide:
+- name (must match exactly as given)
+- description: what is being tested
+- steps: step-by-step test procedure
+- expectedResult: what should happen
+- priority (must match exactly as given)
+
+Output a JSON array of complete test case objects.`;
+
+/**
+ * Build the system prompt for the planning pass, using the given custom
+ * instructions (falls back to the default instructions).
+ */
+export function buildPlanSystemPrompt(instructions?: string): string {
+  const persona = (instructions && instructions.trim()) || DEFAULT_TC_INSTRUCTIONS;
+  return `${persona}\n\n${PLAN_STRUCTURAL_DIRECTIVE}`;
+}
+
+/**
+ * Build the system prompt for the detail pass, using the given custom
+ * instructions (falls back to the default instructions).
+ */
+export function buildDetailSystemPrompt(instructions?: string): string {
+  const persona = (instructions && instructions.trim()) || DEFAULT_TC_INSTRUCTIONS;
+  return `${persona}\n\n${DETAIL_STRUCTURAL_DIRECTIVE}`;
+}

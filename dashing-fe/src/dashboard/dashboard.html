@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' ws://localhost:* http://localhost:* https://localhost:* http://127.0.0.1:* https://127.0.0.1:*">
-  <title>Dashing - QA Testing Dashboard</title>
+  <title>ThreeEyedRaven - QA Testing Dashboard</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -20,7 +20,7 @@
             <circle cx="16" cy="16" r="6" fill="currentColor"/>
             <path d="M16 4V12M16 20V28M4 16H12M20 16H28" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
           </svg>
-          <span class="logo-text">Dashing</span>
+          <span class="logo-text">ThreeEyedRaven</span>
         </div>
       </div>
       
@@ -52,7 +52,6 @@
             <polyline points="10,9 9,9 8,9"/>
           </svg>
           <span>Generated</span>
-          <span class="nav-badge nav-badge-pro" title="Pro Feature">PRO</span>
         </button>
         
         <button class="nav-item" data-page="settings">
@@ -233,6 +232,22 @@
                 <div class="settings-nav-content">
                   <h3>Integrations</h3>
                   <p>Connect AI providers and external services</p>
+                </div>
+                <svg class="settings-nav-arrow" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="9 18 15 12 9 6"/>
+                </svg>
+              </div>
+
+              <!-- Prompts Card -->
+              <div class="settings-nav-card" data-settings-section="prompts">
+                <div class="settings-nav-icon prompts-icon">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
+                  </svg>
+                </div>
+                <div class="settings-nav-content">
+                  <h3>Prompts</h3>
+                  <p>Manage prompts used for test case generation</p>
                 </div>
                 <svg class="settings-nav-arrow" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <polyline points="9 18 15 12 9 6"/>
@@ -661,6 +676,54 @@
                     </svg>
                     Drag providers to set priority order. The first enabled provider will be used by default.
                   </p>
+                </div>
+              </div>
+
+              <!-- Prompts Sub-View -->
+              <div class="settings-section-content hidden" id="section-prompts">
+                <div class="settings-card">
+                  <h3 class="settings-section-title">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
+                    </svg>
+                    Test Case Generation Prompts
+                  </h3>
+                  <p class="settings-description">These instructions steer the AI when generating test cases. The default prompt cannot be edited or deleted. You can add up to <span id="prompts-max-count">10</span> of your own and pick one when generating test cases.</p>
+
+                  <!-- Prompts List -->
+                  <div class="prompts-list" id="prompts-list">
+                    <!-- Prompt cards rendered here -->
+                  </div>
+
+                  <!-- Add Prompt Button -->
+                  <div class="prompts-actions">
+                    <button class="btn btn-secondary btn-sm" id="add-prompt-btn">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="12" y1="5" x2="12" y2="19"/>
+                        <line x1="5" y1="12" x2="19" y2="12"/>
+                      </svg>
+                      Add Prompt
+                    </button>
+                    <span class="prompts-count-note" id="prompts-count-note"></span>
+                  </div>
+
+                  <!-- Add/Edit Prompt Form -->
+                  <div class="prompt-form hidden" id="prompt-form">
+                    <input type="hidden" id="prompt-edit-id" value="">
+                    <div class="form-group">
+                      <label for="prompt-name-input">Prompt Name</label>
+                      <input type="text" id="prompt-name-input" class="setting-input" placeholder="e.g., Security-focused tests" maxlength="60">
+                    </div>
+                    <div class="form-group">
+                      <label for="prompt-instructions-input">Instructions</label>
+                      <textarea id="prompt-instructions-input" class="setting-input" rows="8" placeholder="You are an expert QA engineer. Focus on..."></textarea>
+                    </div>
+                    <div class="prompt-form-error hidden" id="prompt-form-error"></div>
+                    <div class="prompt-form-actions">
+                      <button class="btn btn-secondary btn-sm" id="prompt-cancel-btn">Cancel</button>
+                      <button class="btn btn-primary btn-sm" id="prompt-save-btn">Save Prompt</button>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -1289,6 +1352,16 @@
             </div>
           </div>
 
+          <!-- Prompt Selection (test cases mode only) -->
+          <div class="ai-prompt-selection" id="ai-prompt-selection">
+            <div class="form-group">
+              <label for="ai-gen-prompt">Prompt</label>
+              <select id="ai-gen-prompt" class="setting-input">
+                <!-- Populated dynamically -->
+              </select>
+            </div>
+          </div>
+
           <!-- Actions Selection Section -->
           <div class="ai-actions-section">
             <div class="ai-actions-header">
@@ -1554,6 +1627,68 @@
               <line x1="12" y1="15" x2="12" y2="3"/>
             </svg>
             Download Debug File
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Retry Generation Modal -->
+    <div id="ai-retry-modal" class="modal hidden">
+      <div class="modal-backdrop"></div>
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align: middle; margin-right: 8px;">
+              <path d="M1 4v6h6"/>
+              <path d="M3.51 15a9 9 0 102.13-9.36L1 10"/>
+            </svg>
+            Retry Generation
+          </h3>
+          <button class="modal-close" id="ai-retry-modal-close">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+        <div class="modal-body">
+          <p class="settings-description">If the current model is busy or rate-limited, pick a different provider or model to retry with.</p>
+
+          <div class="ai-retry-current-row">
+            <span class="ai-error-label">Previously used:</span>
+            <span id="ai-retry-current" class="ai-error-value"></span>
+          </div>
+
+          <div id="ai-retry-selection">
+            <div class="form-row">
+              <div class="form-group">
+                <label for="ai-retry-provider">AI Provider</label>
+                <select id="ai-retry-provider" class="setting-input"></select>
+              </div>
+              <div class="form-group">
+                <label for="ai-retry-model">Model</label>
+                <select id="ai-retry-model" class="setting-input"></select>
+              </div>
+            </div>
+          </div>
+
+          <div class="ai-no-providers hidden" id="ai-retry-no-providers">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/>
+              <line x1="12" y1="8" x2="12" y2="12"/>
+              <line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+            <span>No AI providers configured. Configure one in Settings first.</span>
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" id="ai-retry-cancel-btn">Cancel</button>
+          <button type="button" class="btn btn-primary" id="ai-retry-confirm-btn">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M1 4v6h6"/>
+              <path d="M3.51 15a9 9 0 102.13-9.36L1 10"/>
+            </svg>
+            Retry
           </button>
         </div>
       </div>

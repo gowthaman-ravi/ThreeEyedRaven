@@ -1,5 +1,5 @@
 /**
- * Dashing - QA Testing Tool
+ * ThreeEyedRaven - QA Testing Tool
  * Main Process Entry Point
  * 
  * Architecture: Dashboard Window + Session Windows
@@ -109,7 +109,7 @@ const createDashboardWindow = (): void => {
     height: config.height,
     minWidth: config.minWidth,
     minHeight: config.minHeight,
-    title: 'Dashing - QA Testing Dashboard',
+    title: 'ThreeEyedRaven - QA Testing Dashboard',
     backgroundColor: '#0a0a0f',
     webPreferences: {
       preload: DASHBOARD_WINDOW_PRELOAD_WEBPACK_ENTRY,
@@ -139,7 +139,7 @@ const createSessionWindow = (sessionId: string, windowId: string, label: string)
     height: 900,
     minWidth: 800,
     minHeight: 600,
-    title: `Dashing - ${label}`,
+    title: `ThreeEyedRaven - ${label}`,
     backgroundColor: '#0a0a0f',
     webPreferences: {
       preload: SESSION_WINDOW_PRELOAD_WEBPACK_ENTRY,
@@ -277,7 +277,7 @@ ipcMain.handle('session-export', async (_event, sessionId: string) => {
   // Show save dialog
   const result = await dialog.showSaveDialog({
     title: 'Export Session',
-    defaultPath: `dashing-session-${session.name.replace(/\s+/g, '-').toLowerCase()}-${Date.now()}.json`,
+    defaultPath: `threeeyedraven-session-${session.name.replace(/\s+/g, '-').toLowerCase()}-${Date.now()}.json`,
     filters: [{ name: 'JSON', extensions: ['json'] }],
   });
 
